@@ -3,7 +3,7 @@ description: Build or refresh the launcher index for ~/.agent/diagrams — one h
 ---
 Build (or rebuild from scratch — it is a derived artifact, never hand-maintained) the launcher page at `~/.agent/diagrams/index.html`.
 
-**Run in the background by default.** When invoked as part of delivering another page, or when any other work is in flight, do this via a background subagent (Agent tool, `run_in_background: true`) so it never blocks or interleaves with the main task — and always on the cheapest/smallest model available (`model: "haiku"` in Claude Code; the equivalent tiny tier elsewhere). Index maintenance is mechanical extraction and templating; it never warrants a big model. Only run it inline when the user invoked `/visual-explainer:index` directly and nothing else is going on. The subagent prompt is simply: "Follow ~/.claude/skills/visual-explainer/commands/index.md to rebuild the diagrams index."
+**Run in the background by default.** When invoked as part of delivering another page, or when any other work is in flight, do this via a background subagent (Agent tool, `run_in_background: true`) so it never blocks or interleaves with the main task. Index maintenance is mechanical extraction and templating, so give it the smallest tier the harness offers. Only run it inline when the user invoked `/html-craft:index` directly and nothing else is going on. The subagent prompt is simply: "Follow ~/.claude/skills/html-craft/commands/index.md to rebuild the diagrams index."
 
 **Gather** — for every `*.html` in `~/.agent/diagrams/` except `index.html` itself:
 

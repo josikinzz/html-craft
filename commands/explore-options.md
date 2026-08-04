@@ -1,9 +1,9 @@
 ---
 description: Generate an exploration grid — several distinctly different approaches to one problem, side by side, each labeled with the tradeoff it makes
 ---
-Load the visual-explainer skill, then build an exploration grid as a single self-contained HTML page: multiple genuinely different answers to one design or implementation question, laid out for side-by-side comparison so the user can pick one.
+Load the html-craft skill, then build an exploration grid as a single self-contained HTML page: multiple genuinely different answers to one design or implementation question, laid out for side-by-side comparison so the user can pick one.
 
-Follow the visual-explainer skill workflow. Read `../references/css-patterns.md` and the skill's Style and Anti-Patterns sections before generating.
+Follow the html-craft skill workflow. Read `../references/css-patterns.md` and the skill's Style and Anti-Patterns sections before generating.
 
 **Framing** — `$1` is the problem to explore (an onboarding screen, an API shape, a caching strategy, a page layout); ask only if no problem is identifiable from arguments or conversation. Read whatever real context exists — the current code, the current design, prior plans — so every option is grounded in the actual constraints, then decide the option count from the problem's real spread (4–6 is the usual range; state it in one line before building).
 
@@ -19,6 +19,6 @@ The page itself uses one coherent aesthetic (fresh font pairing and palette, bot
 
 **Verify** — the skill's global Verify checklist, plus: every option has a distinct structural bet and a stated tradeoff, and the grid supports direct comparison at a glance (equal panel prominence — the page recommends by argument, not by visual weight).
 
-Write to `~/.agent/diagrams/` with a descriptive filename (e.g. `onboarding-explorations.html`), open in the browser, and tell the user the path. Invite them to pick an option by number — the natural next step is expanding the winner with `/visual-explainer:generate-visual-plan`, keeping this page as reference context for the implementing session.
+Write to `~/.agent/diagrams/` with a descriptive filename (e.g. `onboarding-explorations.html`), open in the browser, and tell the user the path. Invite them to pick an option by number — the natural next step is expanding the winner with `/html-craft:generate-visual-plan`, keeping this page as reference context for the implementing session.
 
 $@

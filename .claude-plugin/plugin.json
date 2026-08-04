@@ -1,11 +1,11 @@
 {
-  "name": "visual-explainer",
-  "description": "Generate beautiful HTML pages for diagrams, diff reviews, plan reviews, slides, and data tables",
-  "version": "0.7.1",
+  "name": "html-craft",
+  "description": "Generate self-contained HTML pages for diagrams, plans, reviews, slides, data tables, and throwaway tools — built so the work can be checked, not just read",
+  "version": "1.0.0",
   "author": {
-    "name": "nicobailon"
+    "name": "josikinzz"
   },
-  "repository": "https://github.com/nicobailon/visual-explainer",
+  "repository": "https://github.com/josikinzz/html-craft",
   "license": "MIT",
   "skills": ["./"]
 }

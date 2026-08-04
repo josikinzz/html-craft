@@ -26,7 +26,7 @@ The reflex to avoid: `background: var(--accent); color: #fff`. It passes in whic
 **Verify, don't estimate:**
 
 ```bash
-python3 ~/.claude/skills/visual-explainer/scripts/check-contrast.py ~/.agent/diagrams/page.html
+python3 ~/.claude/skills/html-craft/scripts/check-contrast.py ~/.agent/diagrams/page.html
 ```
 
 It resolves the custom properties for both themes and reports every pair below its floor. Contrast is arithmetic — check it rather than judging it.

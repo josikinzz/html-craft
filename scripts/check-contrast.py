@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Contrast checker for visual-explainer pages.
+Contrast checker for html-craft pages.
 
 Parses a generated self-contained HTML file, resolves its CSS custom properties
 for each theme block it defines, and reports text/background pairs that fall
@@ -544,7 +544,7 @@ def main():
     total_checked = len(rows)
     if total_checked == 0:
         print('  no resolvable text/background pairs found — is this a themed '
-              'visual-explainer page?\n  (expects CSS custom properties: --bg, '
+              'html-craft page?\n  (expects CSS custom properties: --bg, '
               '--surface, --text, --text-dim, ...)\n')
         return 2
 

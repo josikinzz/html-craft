@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Share Visual Explainer HTML via Vercel
+# Share HTML Craft HTML via Vercel
 # Usage: ./share.sh <html-file>
 # Returns: Live URL instantly (no auth required)
 
