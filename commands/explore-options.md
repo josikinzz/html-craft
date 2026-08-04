@@ -14,6 +14,9 @@ Follow the html-craft skill workflow. Read `../references/css-patterns.md` and t
 1. A short name and number the user can pick it by
 2. The rendering that shows the approach — a live mockup for UI options (each visually committed to its own direction), a diagram or annotated snippet for code/architecture options
 3. **The tradeoff it makes** — one labeled line stating what this option buys and what it gives up. An option without a stated cost is advertising, not exploration.
+4. **A notes field** the user can type into about this option ("option 2, but not the caching part").
+
+Exactly one option carries a **Recommended** marker with a one-line reason for it. The grid also carries a page-level notes field and an explicit escape from the framing — a "none of these" panel with a text field — so the user can say the question is wrong instead of picking the least-wrong option. Every field stays optional. Full contract: "Asking the user" in `../references/tool-patterns.md`.
 
 The page itself uses one coherent aesthetic (fresh font pairing and palette, both themes, no slop patterns) as neutral chrome around the panels — for UI explorations, the variation belongs inside the mockups, not in the page frame.
 

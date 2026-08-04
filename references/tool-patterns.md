@@ -12,6 +12,51 @@ Export format follows destination:
 - **Into a file/commit** → the file's own format (JSON, YAML, CSS custom properties), complete and valid
 - **Config edits** → a diff of changed keys only, not a full re-dump
 
+The export carries the **notes** and the **answered / unanswered / overridden** state alongside the structured values (see "Asking the user"). Structured values alone export the agent's own proposal back at it.
+
+## Asking the user
+
+This section binds **any page that asks the user to approve, pick, rank, or sign off** — an exploration grid, a plan ledger, a review, a curation table, not only tools. The risk it removes: when the only inputs are the agent's predefined options, the user can pick among the agent's ideas and nothing else. Free text is the one channel that can say *the question itself is wrong*.
+
+**Free text at two scopes, always present, never required.**
+
+- A **page-level notes** field, once per page — this catches "you framed this wrong".
+- A **per-item note** on the repeating unit, whatever it is: each option in an exploration grid, each row in a curation table, each task in a plan ledger — this catches "option 2, but not the caching part".
+
+**Nothing blocks the export.** No required fields, no validation gate on the way out. The export button works with every field blank. A page that can refuse to let the user leave is a form, not a working surface.
+
+**Structured choices are accelerants, not gates.** Offer radios, chips, and rankings for the reason they work: one click is cheaper than a paragraph, so the user answers instead of skipping. Every question can be left unanswered, and every choice set carries an explicit escape — a "none of these" / "other" option with an inline text field — so the user can reject the framing instead of picking the least-wrong answer.
+
+**Every open question carries a recommendation with its reason.** Where a question has no predetermined answer, commit to one — a page that dumps N options and makes the user do all the thinking is its own failure. Mark it visibly as the agent's recommendation and give it a one-line reason. The reason is the point: a bare recommendation invites a rubber stamp, a reasoned one can be argued with.
+
+**Blank is not agreement.** This rule is what makes the recommendation safe. Implement it as **provenance per field**: every answerable field holds a value *and* a source, `agent` or `user`. Any interaction with the field flips its source to `user`. The export then tells three states apart honestly — confirmed, overridden, never touched — and exports an untouched question as explicitly unanswered instead of dropping it, so the agent reads "no input given" rather than treating silence as consent.
+
+A field whose source is still `agent` was never touched, whatever value sits in it. That case reads as *not confirmed* — never as agreement. Confirming is an action: the user clicks the already-selected option, which flips the source like any other interaction.
+
+```js
+// State is one object (see Mechanics); provenance is two extra keys per field.
+state.answers = {
+  cacheLayer: { value: "redis", source: "agent", reason: "Already in the stack." },
+  retries:    { value: 3,       source: "user",  reason: "Agent recommended 3." },
+  rolloutPct: { value: 10,      source: "user",  reason: "Agent recommended 50." },
+  authFlow:   { value: null,    source: "agent", reason: "No default fits." }
+};
+state.notes = { page: "", byItem: { opt1: "", opt2: "" } };
+```
+
+```markdown
+- Cache layer: **redis** — agent recommendation, NOT confirmed (untouched)
+- Retries: **3** — confirmed by the user (matches the recommendation)
+- Rollout %: **10** — set by the user (agent recommended 50)
+- Auth flow: **unanswered** — no recommendation offered, no input given
+- Notes on option 2: "yes, but not the caching part"
+- Page notes: (none)
+```
+
+Read the first line back as the agent: it says the value is yours, not theirs, and still needs a decision. That is the whole point of the rule.
+
+Style the recommendation marker and the notes fields on the existing token contract — an inline `.status`-style pill in `--accent` on `--accent-dim` for "Recommended", `--text-dim` for the one-line reason, `1px solid var(--border)` on the `<textarea>`. Full tinted borders, no left accent stripes, no emoji.
+
 ## Tool types
 
 Pick the shape from the job. Hybrids are fine; commit to one primary interaction.
@@ -29,7 +74,7 @@ Pick the shape from the job. Hybrids are fine; commit to one primary interaction
 ## Mechanics
 
 - **Control styling** — buttons, focus rings, inputs, sliders, toggles, drag states, validation — is in "Interactive Controls" in `css-patterns.md`, on the same token contract as the rest of the page. The export button is the page's one primary button.
-- **Pre-fill with your best guess.** The tool opens showing the agent's proposed answer — tickets pre-sorted, flags pre-set, sliders at recommended values — so the user corrects rather than starts from zero. An empty tool wastes the agent's judgment.
+- **Pre-fill with your best guess, and record that it was yours.** The tool opens showing the agent's proposed answer — tickets pre-sorted, flags pre-set, sliders at recommended values — so the user corrects rather than starts from zero. An empty tool wastes the agent's judgment. Every pre-filled field opens at `source: "agent"` (see "Asking the user"); the provenance is what keeps an untouched pre-fill from exporting as the user's endorsement. The two rules are one system: pre-fill supplies the starting point, provenance keeps the export honest about who chose it.
 - **Embed source data** in a single `<script type="application/json">` block, parsed at load. No fetch, no sidecar files.
 - **State is one JS object; the DOM renders from it.** Every interaction mutates state, then re-renders. Export serializes state directly — never scrape the DOM to find out what the user did.
 - **Export mechanics**: `navigator.clipboard.writeText` with a hidden-textarea fallback (clipboard API needs a secure context; `file://` counts, but keep the fallback). Flash a visible confirmation on the button ("Copied ✓", ~1.5s). Offer a second format only when both destinations are real.
@@ -46,6 +91,8 @@ Run these in addition to the skill's global Verify checklist:
 - **Census**: every item in the source data appears in the tool — count them.
 - **Round-trip**: perform one edit of each supported kind, export, and confirm the exported text reflects every edit and fully reconstructs the final state. This is the completion criterion for any tool.
 - **Pre-fill**: the tool opens populated with the best-guess state, not blank.
+- **Empty export**: export with no input at all. The exported text states that nothing was answered, and names the agent's values as the agent's. This check fails often, because the tool opens pre-filled — the untouched defaults leave as if the user had picked them.
+- **Free text**: the page-level notes field and one per-item note both reach the export, and the export button works with every field blank.
 - **Constraint firing**: each encoded rule triggers its warning when deliberately violated.
 - **Unexported-changes guard**: change counter increments on edit; `beforeunload` warns before, and not after, export.
 - **Keyboard path**: the primary interaction is completable without a pointer.

@@ -61,6 +61,7 @@ Include a section only when the plan has real content for it; the sections below
    - A **last updated** stamp, in local time, next to the count.
    - One row per task: checkbox mark, id, title, its completion criterion, and a status pill reading Todo, Doing, Done, or Blocked.
    - Blocked rows state the blocker in one sentence. Dropped rows state why they were dropped.
+   - A per-task notes field, plus one page-level notes field under the ledger — a task the user disagrees with needs somewhere to say so. Both optional. See "Asking the user" in `../references/tool-patterns.md`.
    *Visual treatment: elevated depth, monospace ids, `.status` pills from css-patterns.md. Full 1px tinted borders — no left-border accent stripes, no emoji; the checkmark is an inline SVG or a styled span.*
 
 4. **State Machine** — Mermaid flowchart or stateDiagram showing states and transitions. Label edges with the triggers (commands, events, conditions). *Wrap in `.mermaid-wrap` with zoom controls (+/−/reset/expand) and click-to-expand. Use `flowchart TD` instead of `stateDiagram-v2` if labels need colons or parentheses. Add an explanatory caption below the diagram.*
