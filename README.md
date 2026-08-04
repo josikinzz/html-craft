@@ -33,8 +33,9 @@ This repository is a personal fork, tuned to one person's workflow. It is a mish
 - **[nicobailon/visual-explainer](https://github.com/nicobailon/visual-explainer)** by [Nico Bailon](https://github.com/nicobailon) — the original, and most of the foundation here. MIT. This fork renamed it to `html-craft`.
 - **[AminBlg/SimpleEnglish](https://github.com/AminBlg/SimpleEnglish)** — packages ASD-STE100 Simplified Technical English, the aerospace controlled language. The Page Voice rules come from it. Jargon stays. Empty adjectives go.
 - **[antvis/infographic](https://github.com/antvis/infographic)** — the source of the structure, item, and theme taxonomy, and of the layout shapes. This fork took the ideas only. It writes plain CSS by hand.
+- **[mattpocock/skills](https://github.com/mattpocock/skills)** by [Matt Pocock](https://github.com/mattpocock) — the `writing-great-skills` skill, at `skills/productivity/writing-great-skills/`. MIT. Its vocabulary shaped how this skill is written.
 
-This fork also restructured `SKILL.md` against the writing-great-skills principles: information hierarchy, progressive disclosure into `references/`, one checkable criterion per step, and pruned no-ops. The file went from 490 lines to 298 lines.
+This fork restructured `SKILL.md` against the writing-great-skills principles: information hierarchy, progressive disclosure into `references/`, one checkable criterion per step, and pruned no-ops. The file went from 490 lines to 298 lines.
 
 Two behaviors are new in this fork. The first is the plan task ledger. The second is a delegation rule that hands the checks, ledger maintenance, and deployment to subagents, and keeps the judgment calls with the parent agent.
 
