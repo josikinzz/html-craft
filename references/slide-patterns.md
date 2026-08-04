@@ -4,7 +4,7 @@ CSS patterns, JS engine, slide type layouts, transitions, navigation chrome, and
 
 **When to use slides:** Only when the user explicitly requests them — `/generate-slides`, `--slides` flag on an existing prompt, or natural language like "as a slide deck." Never auto-select slide format.
 
-**Before generating**, also read `./css-patterns.md` for shared patterns (Mermaid zoom controls, overflow protection, depth tiers, status badges) and `./libraries.md` for Mermaid theming, Chart.js, and font pairings. Those patterns apply to slides too — this file adds slide-specific patterns on top.
+**Before generating**, also read `./css-patterns.md` for shared patterns (overflow protection, depth tiers, status badges), `./mermaid.md` for Mermaid theming and containers, and `./libraries.md` for Chart.js and font pairings. Those patterns apply to slides too — this file adds slide-specific patterns on top.
 
 ## Planning a Deck from a Source Document
 
@@ -48,7 +48,8 @@ The deck is a scroll-snap container. Each slide is exactly one viewport tall.
   height: 100dvh;
   overflow-y: auto;
   scroll-snap-type: y mandatory;
-  scroll-behavior: smooth;
+  /* No scroll-behavior: smooth here — goTo() uses scrollIntoView({behavior:'smooth'}),
+     which reduced-motion users' browsers can override; the CSS property can't be. */
   -webkit-overflow-scrolling: touch;
 }
 
@@ -204,12 +205,14 @@ All navigation is `position: fixed` with high z-index, layered above slides. Sty
   z-index: 100;
 }
 
+/* Inactive dots at 0.3 alpha are effectively invisible — they're a control,
+   so they need the 3:1 non-text floor. 0.55 reads as "available but quiet". */
 .deck-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--text-dim);
-  opacity: 0.3;
+  opacity: 0.55;
   border: none;
   padding: 0;
   cursor: pointer;
@@ -217,7 +220,12 @@ All navigation is `position: fixed` with high z-index, layered above slides. Sty
 }
 
 .deck-dot:hover {
-  opacity: 0.6;
+  opacity: 0.85;
+}
+
+.deck-dot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
 .deck-dot.active {
@@ -269,156 +277,29 @@ Auto-fade after first interaction or after 4 seconds.
 
 ### Chrome Visibility on Mixed Backgrounds
 
-For decks where some slides are light and some dark (especially full-bleed slides), nav chrome needs to remain visible. Two approaches:
+For decks where some slides are light and some dark (especially full-bleed slides), nav chrome needs to remain visible. Give chrome elements a mostly-opaque tint of the page background — solid enough to guarantee legibility on any slide, with no blur or text-shadow (both read as haze/halo artifacts):
 
 ```css
-/* Approach A: subtle backdrop on chrome elements */
 .deck-dots,
 .deck-counter {
-  background: color-mix(in srgb, var(--bg) 70%, transparent 30%);
+  background: color-mix(in srgb, var(--bg) 85%, transparent 15%);
   padding: 6px;
   border-radius: 20px;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-/* Approach B: text shadow for legibility on any background */
-.deck-counter,
-.deck-hints {
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 ```
 
 ## SlideEngine JavaScript
 
-Add once at the end of the page. Handles navigation, chrome updates, and scroll-triggered reveals. Event delegation ensures slide-internal interactions (Mermaid zoom, scrollable code, overflow tables) don't trigger slide navigation.
+The complete SlideEngine — navigation, chrome, scroll-triggered reveals, deep links — lives in `templates/slide-deck.html`. **Copy it wholesale**; it is the single source of truth for this engine. Do not retype it from memory or rebuild it from this summary.
 
-```javascript
-class SlideEngine {
-  constructor() {
-    this.deck = document.querySelector('.deck');
-    this.slides = [...document.querySelectorAll('.slide')];
-    this.current = 0;
-    this.total = this.slides.length;
-    this.buildChrome();
-    this.bindEvents();
-    this.observe();
-    this.update();
-  }
+Rules the implementation embodies (verify these survive your adaptation):
 
-  buildChrome() {
-    // Progress bar
-    var bar = document.createElement('div');
-    bar.className = 'deck-progress';
-    document.body.appendChild(bar);
-    this.bar = bar;
-
-    // Nav dots
-    var dots = document.createElement('div');
-    dots.className = 'deck-dots';
-    var self = this;
-    this.slides.forEach(function(_, i) {
-      var d = document.createElement('button');
-      d.className = 'deck-dot';
-      d.title = 'Slide ' + (i + 1);
-      d.onclick = function() { self.goTo(i); };
-      dots.appendChild(d);
-    });
-    document.body.appendChild(dots);
-    this.dots = [].slice.call(dots.children);
-
-    // Counter
-    var ctr = document.createElement('div');
-    ctr.className = 'deck-counter';
-    document.body.appendChild(ctr);
-    this.counter = ctr;
-
-    // Keyboard hints
-    var hints = document.createElement('div');
-    hints.className = 'deck-hints';
-    hints.textContent = '\u2190 \u2192 or scroll to navigate';
-    document.body.appendChild(hints);
-    this.hints = hints;
-    this.hintTimer = setTimeout(function() {
-      hints.classList.add('faded');
-    }, 4000);
-  }
-
-  bindEvents() {
-    var self = this;
-    // Keyboard — skip if focus is inside interactive content
-    document.addEventListener('keydown', function(e) {
-      if (e.target.closest('.mermaid-wrap, .table-scroll, .code-scroll, input, textarea, [contenteditable]')) return;
-      if (['ArrowDown', 'ArrowRight', ' ', 'PageDown'].includes(e.key)) {
-        e.preventDefault(); self.next();
-      } else if (['ArrowUp', 'ArrowLeft', 'PageUp'].includes(e.key)) {
-        e.preventDefault(); self.prev();
-      } else if (e.key === 'Home') {
-        e.preventDefault(); self.goTo(0);
-      } else if (e.key === 'End') {
-        e.preventDefault(); self.goTo(self.total - 1);
-      }
-      self.fadeHints();
-    });
-
-    // Touch swipe
-    var touchY;
-    this.deck.addEventListener('touchstart', function(e) {
-      touchY = e.touches[0].clientY;
-    }, { passive: true });
-    this.deck.addEventListener('touchend', function(e) {
-      var dy = touchY - e.changedTouches[0].clientY;
-      if (Math.abs(dy) > 50) { dy > 0 ? self.next() : self.prev(); }
-    });
-  }
-
-  observe() {
-    var self = this;
-    var obs = new IntersectionObserver(function(entries) {
-      entries.forEach(function(entry) {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          self.current = self.slides.indexOf(entry.target);
-          self.update();
-        }
-      });
-    }, { threshold: 0.5 });
-    this.slides.forEach(function(s) { obs.observe(s); });
-  }
-
-  goTo(i) {
-    this.slides[Math.max(0, Math.min(i, this.total - 1))]
-      .scrollIntoView({ behavior: 'smooth' });
-  }
-
-  next() { if (this.current < this.total - 1) this.goTo(this.current + 1); }
-  prev() { if (this.current > 0) this.goTo(this.current - 1); }
-
-  update() {
-    this.bar.style.width = ((this.current + 1) / this.total * 100) + '%';
-    var self = this;
-    this.dots.forEach(function(d, i) { d.classList.toggle('active', i === self.current); });
-    this.counter.textContent = (this.current + 1) + ' / ' + this.total;
-  }
-
-  fadeHints() {
-    clearTimeout(this.hintTimer);
-    this.hints.classList.add('faded');
-  }
-}
-```
-
-**Usage:** Instantiate after the DOM is ready and any libraries (Mermaid, Chart.js) have rendered. Always call `autoFit()` before `new SlideEngine()` so content is sized correctly before intersection observers fire.
-
-```html
-<script>
-  // After Mermaid/Chart.js initialization (if used), or at end of <body>:
-  document.addEventListener('DOMContentLoaded', function() {
-    autoFit();
-    new SlideEngine();
-  });
-</script>
-```
+- **Boot independently of libraries:** construct SlideEngine on `DOMContentLoaded`, never inside a Mermaid/Chart.js `.then()` — a CDN failure must not take navigation down. Call `autoFit()` (below) after libraries render.
+- **Event delegation:** keyboard handlers skip events originating inside `.mermaid-wrap, .table-scroll, .code-scroll, input, textarea, [contenteditable]` so slide-internal interactions never trigger slide navigation.
+- **Deep links:** `#5` opens on slide 5; `update()` keeps the URL at the current slide via `history.replaceState` (wrapped in try/catch for `file://` edge cases).
+- **Chrome is built in JS:** progress bar, dots (one focusable button per slide), counter, and keyboard hints are appended to `<body>`, so slide markup stays clean.
+- **Hints dim, never vanish:** after the 4s timer or first keypress, `.deck-hints.faded` drops to low opacity — first-time viewers can still find it.
+- **IntersectionObserver at `threshold: 0.5`** both marks slides `.visible` (triggering reveals) and tracks the current index — one observer, two jobs.
 
 ## Auto-Fit
 
@@ -426,13 +307,21 @@ A single post-render function that handles all known content overflow cases. Age
 
 ```javascript
 function autoFit() {
-  // Mermaid SVGs: fill container instead of rendering at intrinsic size
+  // Mermaid SVGs: contain in BOTH axes so the whole diagram stays on the slide.
+  // width:100% + height:auto stretches to the container width and lets a tall
+  // diagram run off the bottom of a fixed-height slide — the slide then opens
+  // showing only the top of the graph, with no way to scroll to the rest.
   document.querySelectorAll('.mermaid svg').forEach(function(svg) {
+    svg.removeAttribute('width');
     svg.removeAttribute('height');
-    svg.style.width = '100%';
-    svg.style.maxWidth = '100%';
+    svg.style.width = 'auto';
     svg.style.height = 'auto';
-    svg.parentElement.style.width = '100%';
+    svg.style.maxWidth = '100%';
+    svg.style.maxHeight = '100%';
+    if (svg.parentElement) {
+      svg.parentElement.style.maxWidth = '100%';
+      svg.parentElement.style.maxHeight = '100%';
+    }
   });
 
   // KPI values: visually scale down text that overflows card width
@@ -457,7 +346,7 @@ function autoFit() {
 ```
 
 Three cases, one function:
-- **Mermaid:** SVGs render with fixed dimensions inside flex containers — force them to fill available width.
+- **Mermaid:** SVGs render at fixed intrinsic dimensions inside flex containers — cap them to the container on both axes so they scale down to fit rather than overflowing. Contain, never stretch.
 - **KPI values:** Long text strings at hero scale overflow card boundaries — `transform: scale()` shrinks visually without reflow.
 - **Blockquotes:** Quotes longer than ~100 characters get proportionally smaller font. The 0.5 floor prevents unreadably small text; if it needs more than 50% shrink, it should have been a content slide.
 
@@ -556,12 +445,24 @@ Heading + bullets or paragraphs. Asymmetric layout — content offset to one sid
   padding: 0;
 }
 
+/* Bullets are body copy — they go in --text, not --text-dim.
+   Dimming the only substance on the slide is the fastest way to make a deck
+   unreadable from the back of a room. If bullets need to recede relative to
+   the heading, do it with size and weight; the heading is already 2x their size. */
 .slide--content .slide__bullets li {
   padding: 8px 0 8px 20px;
   position: relative;
   font-size: clamp(16px, 2vw, 22px);
   line-height: 1.6;
+  color: var(--text);
+}
+
+/* Secondary detail hanging off a bullet — this is what --text-dim is for */
+.slide--content .slide__bullets li small {
+  display: block;
+  font-size: 0.75em;
   color: var(--text-dim);
+  margin-top: 2px;
 }
 
 .slide--content .slide__bullets li::before {
@@ -631,17 +532,16 @@ Full-viewport Mermaid diagram. Max 8–10 nodes (presentation scale — fewer, l
 - **Use CSS Pipeline** (below) for simple linear flows: A → B → C → D sequences, build steps, deployment stages. CSS cards give full control over sizing, typography, and fill the viewport naturally.
 - **Never leave a small Mermaid diagram alone on a slide.** If the diagram is small, either switch to CSS, or pair it with supporting content (description cards, bullet annotations, a summary panel) in a split layout. A slide with a tiny diagram and empty space is a failed slide.
 
-**Mermaid centering fix.** When you do use Mermaid, add `display: flex; align-items: center; justify-content: center;` to `.mermaid-wrap` so the SVG centers within its container instead of hugging the top-left corner. Change `transform-origin` to `center center` so zoom radiates from the middle.
+**Mermaid centering fix.** When you do use Mermaid, add `display: flex; align-items: center; justify-content: center;` to `.mermaid-wrap` so the SVG centers within its container instead of hugging the top-left corner.
+
+**Diagram interaction on slides is click-to-expand only.** Slides are fixed-viewport, so in-slide pan/zoom fights the deck's own scroll model. The full transform-based pan/zoom engine belongs to scrollable pages (see `mermaid.md` and `templates/mermaid-flowchart.html`); on slides, clicking the diagram (or the ⛶ button, kept for discoverability) opens it full size in a new tab — see `openMermaidInNewTab` in `templates/slide-deck.html`.
 
 ```html
 <section class="slide slide--diagram">
   <h2 class="slide__heading reveal">Diagram Title</h2>
   <div class="mermaid-wrap reveal" style="flex:1; min-height:0;">
     <div class="zoom-controls">
-      <button onclick="zoomDiagram(this,1.2)" title="Zoom in">+</button>
-      <button onclick="zoomDiagram(this,0.8)" title="Zoom out">&minus;</button>
-      <button onclick="resetZoom(this)" title="Reset">&#8634;</button>
-      <button onclick="openDiagramFullscreen(this)" title="Open full size in new tab">&#x26F6;</button>
+      <button onclick="openDiagramFullscreen(this)" title="Open full size in new tab" aria-label="Open full size in new tab">&#x26F6;</button>
     </div>
     <pre class="mermaid">
       graph TD
@@ -650,8 +550,6 @@ Full-viewport Mermaid diagram. Max 8–10 nodes (presentation scale — fewer, l
   </div>
 </section>
 ```
-
-**Click to expand.** Clicking anywhere on the diagram (without dragging) opens it full-size in a new browser tab. The expand button (⛶) provides the same functionality for discoverability.
 
 ```css
 .slide--diagram {
@@ -675,17 +573,28 @@ Full-viewport Mermaid diagram. Max 8–10 nodes (presentation scale — fewer, l
 }
 ```
 
-**Auto-fit SVG to container.** Mermaid renders SVGs with fixed dimensions and an inline `max-width` style that keeps diagrams tiny inside large slides. The `autoFit()` function (see above) handles this at runtime. Keep the CSS as a belt-and-suspenders fallback:
+**Auto-fit SVG to container.** Mermaid renders SVGs at fixed intrinsic dimensions with an inline `max-width`, which leaves diagrams either tiny inside a large slide or overflowing a short one. The `autoFit()` function (see above) handles this at runtime. Keep the CSS as a belt-and-suspenders fallback — capping **both** axes, so a tall diagram scales down instead of running off the bottom of the slide:
 
 ```css
 .slide--diagram .mermaid svg {
-  width: 100% !important;
+  width: auto !important;
   height: auto !important;
   max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+.slide--diagram .mermaid {
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 ```
 
-**Mermaid overrides for presentation scale** (add alongside the standard Mermaid CSS overrides from `libraries.md`):
+A slide is a fixed viewport with no scrolling, so an overflowing diagram is unrecoverable for the reader — unlike a scrollable page, there's nowhere to scroll to see the rest. If a diagram only becomes legible at a size that overflows, it belongs on two slides or in the hybrid pattern, not scaled up.
+
+**Mermaid overrides for presentation scale** (add alongside the standard Mermaid CSS overrides from `mermaid.md`):
 
 ```css
 .slide--diagram .mermaid .nodeLabel {
@@ -921,6 +830,9 @@ KPI cards at presentation scale (48–64px hero numbers). Mini-charts via Chart.
   position: relative;
 }
 
+/* 11px on a solid accent fill. --bg works as ink only when --accent is the
+   bright tone (dark themes); on a light theme --bg is cream and lands at ~3:1.
+   Use the fill/on-fill pair so it holds in both. */
 .slide__code-filename {
   position: absolute;
   top: -12px;
@@ -930,8 +842,8 @@ KPI cards at presentation scale (48–64px hero numbers). Mini-charts via Chart.
   font-weight: 600;
   padding: 4px 12px;
   border-radius: 4px;
-  background: var(--accent);
-  color: var(--bg);
+  background: var(--accent-fill, var(--accent));
+  color: var(--accent-on-fill, var(--bg));
 }
 
 .slide__code-block pre {
@@ -1002,6 +914,12 @@ KPI cards at presentation scale (48–64px hero numbers). Mini-charts via Chart.
 
 Background image (surf-generated or CSS gradient) dominates the viewport. Text overlay with gradient scrim ensuring contrast. Zero slide padding.
 
+**This slide type is where readability fails most often.** Light text is committed up front, then the backdrop underneath it varies — a photo, a gradient, or nothing if the image fails to load. Three rules make it safe:
+
+1. **The scrim is mandatory, not optional.** It is the only thing guaranteeing contrast over an image whose brightness you can't predict. Never ship a bleed slide without it.
+2. **The gradient fallback is built from deep surface tones, never from `var(--accent)`.** An accent gradient under white text is the "white on pale green" failure in its purest form: Terminal Mono's `#50fa7b` measures **1.4:1**, Midnight Editorial's gold **2.2:1**, and a bright coral or amber lands around 2–3:1. Accents are ink on these slides, not ground.
+3. **`.slide__bg` carries an opaque dark fallback color** so a failed image load leaves dark ground rather than the page background — which, on a light theme, would strand white text on cream.
+
 ```html
 <section class="slide slide--bleed">
   <div class="slide__bg" style="background-image:url('data:image/png;base64,...')"></div>
@@ -1017,7 +935,6 @@ Background image (surf-generated or CSS gradient) dominates the viewport. Text o
 .slide--bleed {
   padding: 0;
   justify-content: flex-end;
-  color: #ffffff;
 }
 
 .slide__bg {
@@ -1025,13 +942,16 @@ Background image (surf-generated or CSS gradient) dominates the viewport. Text o
   inset: 0;
   background-size: cover;
   background-position: center;
+  /* Opaque dark fallback: if the image 404s, the light text still has ground */
+  background-color: #14181f;
   z-index: 0;
 }
 
+/* Strongest where the text sits. Text is bottom-anchored, so the scrim is too. */
 .slide__scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.1) 50%, transparent 100%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.45) 35%, rgba(0, 0, 0, 0.1) 70%, transparent 100%);
   z-index: 1;
 }
 
@@ -1039,12 +959,39 @@ Background image (surf-generated or CSS gradient) dominates the viewport. Text o
   position: relative;
   z-index: 2;
   padding: clamp(40px, 6vh, 80px) clamp(40px, 8vw, 120px);
+  color: #f7f8fa;   /* near-white, not pure #fff */
 }
 
-/* When no generated image, use a bold CSS gradient background */
+/* Secondary text on a bleed slide: 0.7 alpha white over a 0.78 scrim still
+   clears 4.5:1. Don't drop below 0.65 — and never use --text-dim here, since
+   it's tuned for the page background, not for a photograph. */
+.slide--bleed .slide__heading { color: #f7f8fa; }
+.slide--bleed .slide__subtitle,
+.slide--bleed .slide__label { color: rgba(247, 248, 250, 0.72); }
+
+/* When no generated image: a deep, low-chroma gradient — NOT the accent.
+   The accent appears as a hairline or a small mark on top, where it's ink. */
 .slide__bg--gradient {
-  background: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 60%, var(--bg) 40%) 100%);
+  background: linear-gradient(135deg, #0a1122 0%, #131c33 45%, #1d2a4a 100%);
 }
+
+/* If the aesthetic wants the accent hue in the ground, mix it DOWN into
+   near-black rather than using it at full strength. */
+.slide__bg--gradient-accent {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--accent) 18%, #0b0e14) 0%,
+    color-mix(in srgb, var(--accent) 30%, #0b0e14) 100%);
+}
+```
+
+**Light-ground bleed slides** are fine as a deliberate choice — a pale photograph or paper texture — but then the ink flips too. Swap the scrim to a light one and set the text in `--text-bright`; don't leave white text on a light backdrop and hope the scrim saves it:
+
+```css
+.slide--bleed-light .slide__scrim {
+  background: linear-gradient(to top, rgba(250, 248, 244, 0.85) 0%, rgba(250, 248, 244, 0.4) 45%, transparent 100%);
+}
+.slide--bleed-light .slide__content,
+.slide--bleed-light .slide__heading { color: var(--text-bright); }
 ```
 
 ## Decorative SVG Elements
@@ -1088,18 +1035,24 @@ Inline SVG accents lift slides from functional to editorial. Use sparingly — o
 ### Geometric Background Pattern
 
 ```css
-/* Faint grid dots behind a slide */
+/* Faint grid dots behind a slide.
+   Uses --pattern (not --border), and fades out where the text sits — a dot
+   field running straight through 22px bullet copy is legible as dots, which
+   means it's competing with the words. */
 .slide--with-grid::before {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+  background-image: radial-gradient(circle, var(--pattern) 1px, transparent 1px);
   background-size: 32px 32px;
-  opacity: 0.5;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, transparent 25%, #000 75%);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, transparent 25%, #000 75%);
   pointer-events: none;
   z-index: 0;
 }
 ```
+
+Dot fields are the safe pattern for slides — they break up flatness without producing continuous lines through the text. **Ruled and diagonal line patterns don't belong behind slide copy at all**: at presentation scale the lines are as thick as the letter strokes. If a deck's aesthetic needs linework, confine it to a border, a corner mark, or a panel the text doesn't sit on.
 
 ### Per-Slide Background Variation
 
@@ -1177,9 +1130,12 @@ Slides get projected, screen-shared, viewed at distance. Design accordingly:
 
 - **Minimum body text: 16px.** Nothing smaller except labels and captions.
 - **One focal point per slide.** Not three competing elements.
-- **Higher contrast than pages.** Dimmed text (`--text-dim`) should still be easily readable at distance — test against the background.
-- **Nav chrome opacity.** Dots and progress bar must be visible on any slide background (light or dark) without being distracting. Use the backdrop blur or text-shadow approach from the Nav Chrome section.
-- **Simpler Mermaid diagrams.** Max 8–10 nodes, 18px+ labels, 2px+ edges. The diagram should be readable without zoom at presentation distance. Zoom controls remain available for detail inspection.
+- **Higher contrast than pages — 7:1 for body copy where you can get it.** A projector's black point is grey, a shared screen is recompressed, and the back row is 20 feet away; all three eat contrast that looked fine on your monitor. 4.5:1 is the floor, not the target.
+- **Bullets and body copy use `--text`.** `--text-dim` is for captions, sources, and slide labels — never for the substance of the slide. A deck where the only content is set in dim grey is unreadable at distance even when it technically passes.
+- **No light ink on bright fills.** Check every solid-filled badge, pill, KPI chip, and bleed slide. This is the failure that survives to delivery most often, because it looks intentional in a thumbnail.
+- **Nothing important on a patterned ground.** Dot fields are fine behind slides; ruled and diagonal lines are not, at this type scale.
+- **Nav chrome opacity.** Dots and progress bar must be visible on any slide background (light or dark) without being distracting — they're controls, so they need 3:1, not decoration alpha. Use the background-tint approach from the Nav Chrome section.
+- **Simpler Mermaid diagrams.** Max 8–10 nodes, 18px+ labels, 2px+ edges. The diagram should be readable at presentation distance; click-to-expand remains available for detail inspection.
 
 ## Content Density Limits
 
@@ -1241,13 +1197,15 @@ Height-based scaling is more critical for slides than width. Each breakpoint pro
 
 Starting points the agent can riff on. Each defines a font pairing, palette, and background treatment. The agent adapts these to the content — different decks with the same preset should still feel distinct.
 
+Every preset carries the full token set from "The Contrast Contract" in `css-patterns.md`: `--accent` is the **ink** tone, `--accent-fill` is the tone that goes *under* text, and `--accent-on-fill` is the ink for that fill. When riffing, keep the three-part shape — swapping in a prettier `--accent` without adjusting the fill is how a deck ends up with white text on a pale ground.
+
 ### Midnight Editorial
 
 Deep navy, serif display, warm gold accents. Cinematic, premium. Dark-first.
 
 ```css
 :root {
-  --font-body: 'Instrument Serif', Georgia, serif;
+  --font-body: 'Spectral', Georgia, serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
   --bg: #0f1729;
   --surface: #162040;
@@ -1256,8 +1214,12 @@ Deep navy, serif display, warm gold accents. Cinematic, premium. Dark-first.
   --border: rgba(200, 180, 140, 0.08);
   --border-bright: rgba(200, 180, 140, 0.16);
   --text: #e8e4d8;
-  --text-dim: #9a9484;
-  --accent: #d4a73a;
+  --text-bright: #f8f6ef;
+  --text-dim: #a49e8d;
+  --pattern: rgba(232, 228, 216, 0.04);
+  --accent: #d4a73a;          /* bright ink on navy — 8.3:1 */
+  --accent-fill: #6b5210;     /* deep gold ground for light ink */
+  --accent-on-fill: #fdf8e8;  /* 8.0:1 on the fill (white on #d4a73a is 2.2:1) */
   --accent-dim: rgba(212, 167, 58, 0.1);
   --code-bg: #0a0f1e;
   --code-text: #d4d0c4;
@@ -1265,15 +1227,19 @@ Deep navy, serif display, warm gold accents. Cinematic, premium. Dark-first.
 @media (prefers-color-scheme: light) {
   :root {
     --bg: #faf8f2;
-    --surface: #ffffff;
+    --surface: #fffefa;
     --surface2: #f5f0e6;
     --surface-elevated: #fffdf5;
     --border: rgba(30, 30, 50, 0.08);
     --border-bright: rgba(30, 30, 50, 0.16);
     --text: #1a1814;
-    --text-dim: #7a7468;
-    --accent: #b8860b;
-    --accent-dim: rgba(184, 134, 11, 0.08);
+    --text-bright: #0d0b08;
+    --text-dim: #6d675c;      /* 5.5:1 — #7a7468 was 4.4:1, just under */
+    --pattern: rgba(26, 24, 20, 0.045);
+    --accent: #8a6508;        /* 5.3:1 — #b8860b is only 3.3:1 as text */
+    --accent-fill: #8a6508;
+    --accent-on-fill: #fdf8e8;
+    --accent-dim: rgba(138, 101, 8, 0.09);
     --code-bg: #2a2520;
     --code-text: #e8e4d8;
   }
@@ -1288,7 +1254,7 @@ Cream paper, bold sans, terracotta/coral accents. Confident and modern. Light-fi
 
 ```css
 :root {
-  --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body: 'Schibsted Grotesk', system-ui, sans-serif;
   --font-mono: 'Azeret Mono', 'SF Mono', monospace;
   --bg: #faf6f0;
   --surface: #ffffff;
@@ -1297,8 +1263,12 @@ Cream paper, bold sans, terracotta/coral accents. Confident and modern. Light-fi
   --border: rgba(60, 40, 20, 0.08);
   --border-bright: rgba(60, 40, 20, 0.16);
   --text: #2c2a25;
-  --text-dim: #7c756a;
-  --accent: #c2410c;
+  --text-bright: #16150f;
+  --text-dim: #6f685d;        /* 5.5:1 — #7c756a was 4.2:1 */
+  --pattern: rgba(44, 42, 37, 0.045);
+  --accent: #c2410c;          /* 4.9:1 as ink on cream */
+  --accent-fill: #c2410c;
+  --accent-on-fill: #fff5ef;  /* 4.9:1 on the fill */
   --accent-dim: rgba(194, 65, 12, 0.08);
   --code-bg: #2c2520;
   --code-text: #f5ece0;
@@ -1312,8 +1282,12 @@ Cream paper, bold sans, terracotta/coral accents. Confident and modern. Light-fi
     --border: rgba(200, 180, 160, 0.08);
     --border-bright: rgba(200, 180, 160, 0.16);
     --text: #f0e8dc;
+    --text-bright: #fdf9f3;
     --text-dim: #a09888;
-    --accent: #e85d2a;
+    --pattern: rgba(240, 232, 220, 0.04);
+    --accent: #e85d2a;          /* bright ink on warm near-black */
+    --accent-fill: #8f3311;     /* deep terracotta ground (white on #e85d2a is 3.5:1) */
+    --accent-on-fill: #fff5ef;
     --accent-dim: rgba(232, 93, 42, 0.1);
     --code-bg: #141210;
     --code-text: #f0e8dc;
@@ -1321,7 +1295,7 @@ Cream paper, bold sans, terracotta/coral accents. Confident and modern. Light-fi
 }
 ```
 
-Background: warm radial glow at bottom left. Terracotta accent borders on cards. Section divider numbers in ultra-light coral.
+Background: warm radial glow at bottom left. Full 1px terracotta-tinted borders on key cards (never side-stripes). Section divider numbers in ultra-light coral.
 
 ### Terminal Mono
 
@@ -1338,8 +1312,12 @@ Dark, monospace everything, green/cyan accents, faint grid. Developer-native. Da
   --border: rgba(80, 250, 123, 0.06);
   --border-bright: rgba(80, 250, 123, 0.12);
   --text: #c8d6e5;
-  --text-dim: #5a6a7a;
-  --accent: #50fa7b;
+  --text-bright: #eaf2fa;
+  --text-dim: #8a9bab;        /* 6.5:1 — #5a6a7a was 3.5:1 on this near-black */
+  --pattern: rgba(200, 214, 229, 0.04);
+  --accent: #50fa7b;          /* bright ink — 14:1 on near-black */
+  --accent-fill: #0d5c2c;     /* deep green ground; white on #50fa7b is 1.4:1 */
+  --accent-on-fill: #e9fff0;  /* 8.6:1 on the fill */
   --accent-dim: rgba(80, 250, 123, 0.08);
   --code-bg: #060a10;
   --code-text: #c8d6e5;
@@ -1347,14 +1325,18 @@ Dark, monospace everything, green/cyan accents, faint grid. Developer-native. Da
 @media (prefers-color-scheme: light) {
   :root {
     --bg: #f4f6f8;
-    --surface: #ffffff;
+    --surface: #fdfeff;
     --surface2: #eaecf0;
     --surface-elevated: #f8f9fa;
     --border: rgba(0, 80, 40, 0.08);
     --border-bright: rgba(0, 80, 40, 0.16);
     --text: #1a2332;
-    --text-dim: #5a6a7a;
-    --accent: #0d7a3e;
+    --text-bright: #0b1119;
+    --text-dim: #566475;      /* 6.0:1 on --surface */
+    --pattern: rgba(26, 35, 50, 0.045);
+    --accent: #0d7a3e;        /* 5.2:1 as ink */
+    --accent-fill: #0d7a3e;
+    --accent-on-fill: #f0fff6;
     --accent-dim: rgba(13, 122, 62, 0.08);
     --code-bg: #1a2332;
     --code-text: #c8d6e5;
@@ -1364,40 +1346,52 @@ Dark, monospace everything, green/cyan accents, faint grid. Developer-native. Da
 
 Background: faint dot grid. Everything in mono. Title slides use large weight-400 mono instead of bold display. Code slides feel native.
 
+**Terminal Mono's trap:** `#50fa7b` is a superb ink and a terrible ground. It's the brightest accent in any preset here, so white or light text over it measures **1.4:1** — the single worst combination the skill can produce. Keep it for text, borders, small marks, and dark-ink-on-bright badges (`background: var(--accent); color: var(--bg)` is 14:1 and looks great); use `--accent-fill` whenever light ink has to sit on top.
+
 ### Swiss Clean
 
 White, geometric sans, single bold accent, visible grid. Minimal and precise. Light-first.
 
 ```css
 :root {
-  --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-body: 'Familjen Grotesk', system-ui, sans-serif;
   --font-mono: 'Fira Code', 'SF Mono', monospace;
-  --bg: #ffffff;
-  --surface: #f8f8f8;
-  --surface2: #f0f0f0;
+  /* Swiss means precise, not literally #fff/#000 — these carry a 1% cool tint
+     toward the blue accent, which reads as "clean" rather than "unset". */
+  --bg: #fdfdfe;
+  --surface: #f7f8fa;
+  --surface2: #eff1f4;
   --surface-elevated: #ffffff;
-  --border: rgba(0, 0, 0, 0.08);
-  --border-bright: rgba(0, 0, 0, 0.16);
-  --text: #111111;
-  --text-dim: #666666;
-  --accent: #0055ff;
-  --accent-dim: rgba(0, 85, 255, 0.06);
+  --border: rgba(10, 12, 20, 0.09);
+  --border-bright: rgba(10, 12, 20, 0.17);
+  --text: #101318;
+  --text-bright: #05070a;
+  --text-dim: #5c6472;        /* 5.9:1 on --surface */
+  --pattern: rgba(16, 19, 24, 0.05);
+  --accent: #0046d1;          /* 7.0:1 — #0055ff is 4.9:1 and vibrates on white */
+  --accent-fill: #0046d1;
+  --accent-on-fill: #f2f6ff;  /* 6.7:1 on the fill */
+  --accent-dim: rgba(0, 70, 209, 0.07);
   --code-bg: #18181b;
   --code-text: #e4e4e7;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #111111;
-    --surface: #1a1a1a;
-    --surface2: #222222;
-    --surface-elevated: #2a2a2a;
-    --border: rgba(255, 255, 255, 0.08);
-    --border-bright: rgba(255, 255, 255, 0.16);
-    --text: #f0f0f0;
-    --text-dim: #888888;
-    --accent: #3b82f6;
-    --accent-dim: rgba(59, 130, 246, 0.08);
-    --code-bg: #0a0a0a;
+    --bg: #0f1013;
+    --surface: #191b1f;
+    --surface2: #212429;
+    --surface-elevated: #2a2d33;
+    --border: rgba(240, 244, 255, 0.09);
+    --border-bright: rgba(240, 244, 255, 0.17);
+    --text: #f0f1f4;
+    --text-bright: #fbfcfe;
+    --text-dim: #9aa2b0;      /* 6.9:1 — #888 on #111 is 5.9:1 but drops on cards */
+    --pattern: rgba(240, 241, 244, 0.04);
+    --accent: #7dabff;        /* bright ink for dark ground */
+    --accent-fill: #1e40af;   /* deep blue ground (white on #3b82f6 is 3.7:1) */
+    --accent-on-fill: #eef4ff;
+    --accent-dim: rgba(125, 171, 255, 0.1);
+    --code-bg: #0a0a0c;
     --code-text: #e4e4e7;
   }
 }

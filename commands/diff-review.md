@@ -22,7 +22,7 @@ Follow the visual-explainer skill workflow. Read the reference template, CSS pat
 - Read all changed files in full — include surrounding code paths needed to validate behavior
 - Check whether `CHANGELOG.md` has an entry for these changes
 - Check whether `README.md` or `docs/*.md` need updates given any new or changed features
-- Reconstruct decision rationale: if this work was done in the current session, mine the conversation for approaches discussed, alternatives rejected, and trade-offs made. Check for project-local progress docs or plan files that may contain reasoning. For committed changes, read commit messages and PR descriptions.
+- Reconstruct decision rationale: if this work was done in the current session, mine the conversation for approaches discussed, alternatives rejected, and trade-offs made. Check for progress docs (`~/.agent/memory/{project}/progress.md`, `~/.pi/agent/memory/{project}/progress.md`) or plan files that may contain reasoning. For committed changes, read commit messages and PR descriptions.
 
 **Verification checkpoint** — before generating HTML, produce a structured fact sheet of every claim you will present in the review:
 - Every quantitative figure: line counts, file counts, function counts, test counts
@@ -33,8 +33,8 @@ Verify each claim against the code. If something cannot be verified, mark it as 
 
 **Diagram structure** — the page should include:
 1. **Executive summary** — not just a dry before/after. Lead with the *intuition*: why do these changes exist? What problem were they solving, what was the core insight? Then the factual scope (X files, Y lines, Z new modules). Aim for "aha moment" clarity — a reader who only sees this section should understand the essence of the change. *Visual treatment: this is the visual anchor — use hero depth (larger type 20-24px, subtle accent-tinted background, more padding than other sections).*
-2. **KPI dashboard** — lines added/removed, files changed, new modules, test counts. Include a **housekeeping** indicator: whether CHANGELOG.md was updated (green/red badge) and whether docs need changes (green/yellow/red).
-3. **Module architecture** — how the file structure changed, with a Mermaid dependency graph of the current state. Wrap in `.mermaid-wrap` with zoom controls (+/−/reset/expand buttons), Ctrl/Cmd+scroll zoom, click-and-drag panning, and click-to-expand (opens diagram full-size in new tab). See css-patterns.md "Mermaid Zoom Controls" for the full pattern including the `openMermaidInNewTab()` function.
+2. **Scope figures** — one dominant metric (net lines or files changed) with the rest inline in a compact strip: lines added/removed, new modules, test counts — not a uniform KPI card grid (see SKILL.md Anti-Patterns). Include a **housekeeping** indicator: whether CHANGELOG.md was updated (green/red badge) and whether docs need changes (green/yellow/red).
+3. **Module architecture** — how the file structure changed, with a Mermaid dependency graph of the current state. Use the full `diagram-shell` zoom/pan/export pattern — copy it from `../templates/mermaid-flowchart.html` per `../references/mermaid.md`.
 4. **Major feature comparisons** — side-by-side before/after panels for each significant area of change (UI, data flow, API surface, config, etc.). Overflow prevention: apply `min-width: 0` on all grid/flex children and `overflow-wrap: break-word` on panels. Never use `display: flex` on `<li>` for marker characters — use absolute positioning instead (see css-patterns.md Overflow Protection).
 5. **Flow diagrams** — Mermaid flowchart, sequence, or state diagrams for any new lifecycle/pipeline/interaction patterns. Same zoom controls and click-to-expand as section 3.
 6. **File map** — full tree with color-coded new/modified/deleted indicators. *Visual treatment: compact — consider `<details>` collapsed by default for pages with many sections.*
@@ -44,13 +44,13 @@ Verify each claim against the code. If something cannot be verified, mark it as 
    - **Bad**: Concrete issues — bugs, regressions, missing error handling, logic errors
    - **Ugly**: Subtle problems — tech debt introduced, maintainability concerns, things that work now but will bite later
    - **Questions**: Anything unclear or that needs the author's clarification
-   - Use styled cards with green/red/amber/blue left-border accents matching the diff color language. Each item should reference specific files and line ranges. If nothing to flag in a category, say "None found" rather than omitting the section.
+   - Use styled cards with full 1px tinted borders and faint background washes in the diff color language (green/red/amber/blue) — never left-border accent stripes (see SKILL.md Anti-Patterns). Each item should reference specific files and line ranges. If nothing to flag in a category, say "None found" rather than omitting the section.
 9. **Decision log** — for each significant design choice in the diff, a styled card with:
    - **Decision**: one-line summary of what was decided (e.g., "Promise-based deferred resolution instead of event emitters for cleanup signaling")
    - **Rationale**: why this approach — constraints, trade-offs, what it enables. Pull from conversation context if available, infer from code structure if not.
    - **Alternatives considered**: what was rejected and why, if recoverable
    - **Confidence**: whether this rationale was explicitly discussed (high — sourced from conversation/docs) or inferred from the code (medium — flagged as inference). Low confidence means the rationale couldn't be recovered at all.
-   - Visual treatment by confidence level — use left-border accent colors consistent with the diff color language: **High** (sourced from conversation/docs): green left border. **Medium** (inferred from code): blue left border, labeled "inferred." **Low** (not recoverable): amber left border, "rationale not recoverable — document before committing" warning. Low-confidence cards are cognitive debt hotspots — tell the user to document the reasoning before committing.
+   - Visual treatment by confidence level — tint each card's full border and background toward the diff color language: **High** (sourced from conversation/docs): green tint. **Medium** (inferred from code): blue tint, labeled "inferred." **Low** (not recoverable): amber tint, "rationale not recoverable — document before committing" warning. Low-confidence cards are cognitive debt hotspots — tell the user to document the reasoning before committing.
 10. **Re-entry context** — a concise "note from present-you to future-you" covering the following. *Visual treatment: compact — consider `<details>` collapsed by default for pages with many sections.*
    - **Key invariants**: assumptions the changed code relies on that aren't enforced by types or tests (e.g., "cleanup must be called before session switch or artifacts leak")
    - **Non-obvious coupling**: files or behaviors that are connected in ways that aren't visible from imports alone (e.g., "the feed renderer reads events written by the overlay — changing the event schema requires updating both")
@@ -61,7 +61,7 @@ Verify each claim against the code. If something cannot be verified, mark it as 
 
 **Optional illustrations** — if `surf` CLI is available (`which surf`), consider generating a hero banner or conceptual illustration via `surf gemini --generate-image` when it would enhance the page. Embed as base64 data URI. See css-patterns.md "Generated Images" for container styles. Skip if surf isn't available or the diff is purely structural.
 
-Include responsive section navigation. Use diff-style visual language throughout: red for removed/before, green for added/after, yellow for modified, blue for neutral context. Write to the user-requested or harness-provided output directory and open in browser.
+Include responsive section navigation. Use diff-style visual language throughout: red for removed/before, green for added/after, yellow for modified, blue for neutral context. Write to `~/.agent/diagrams/` and open in browser.
 
 Ultrathink.
 

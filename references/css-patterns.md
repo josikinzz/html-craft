@@ -2,31 +2,74 @@
 
 Reusable patterns for layout, connectors, theming, and visual effects in self-contained HTML diagrams.
 
+## The Contrast Contract
+
+Read this before picking a single color. Almost every unreadable generated page traces to one of three mistakes, and all three are structural — they survive any amount of eyeballing.
+
+**1. One accent doing two jobs.** A color bright enough to read as text on a dark page is far too bright to sit *under* white text. `#50fa7b`, `#22d3ee`, `#fb923c`, `#d4a73a`, `#34d399` all measure **1.4–2.7:1** against white. That is the "white text on pale green" failure. Split every accent in two:
+
+| Token | Job | Requirement |
+|---|---|---|
+| `--accent` | **ink** — text, icons, borders, chart strokes | ≥4.5:1 on `--surface` |
+| `--accent-fill` | **fill** — a background with text on top | ≥4.5:1 against `--accent-on-fill` |
+| `--accent-on-fill` | the ink that sits on `--accent-fill` | near-black for bright fills, near-white for deep fills |
+| `--accent-dim` | 8–12% tint for wash backgrounds | text on it must still be `--accent`, and `--accent` must clear 4.5:1 over the *tinted* result |
+
+The reflex to avoid: `background: var(--accent); color: #fff`. It passes in whichever theme you happened to look at and fails in the other.
+
+**2. Small type in weak color.** Badges, chips, tags, and captions run 10–12px, where contrast matters *more*, not less. On a light surface, the popular mid-tone semantics all fail as text: `#059669` (3.7:1), `#0891b2` (3.6:1), `#d97706` (3.1:1), `#ef4444` (3.3:1). Drop a step: `#15803d`, `#0f766e`, `#b45309`, `#dc2626` all clear 4.5:1 against white while reading as the same hue.
+
+**3. `--text-dim` used as a body color.** Dim is for provenance stamps, timestamps, and captions — information a reader can skip. Bullets, card descriptions, and table cells go in `--text`; build hierarchy with size and weight, not by fading the words. `--text-dim` still has to clear 4.5:1 on every surface it lands on.
+
+**Floors:** 4.5:1 for anything read in sequence and for all text under ~19px; 3:1 for display type 24px+ and for meaningful non-text (borders, icons, focus rings, chart strokes). Decorative-only marks (watermark numerals, oversized quote glyphs) are exempt precisely because they carry no information — keep them at or below 0.08 opacity so they can't compete with the text over them.
+
+**Verify, don't estimate:**
+
+```bash
+python3 ~/.claude/skills/visual-explainer/scripts/check-contrast.py ~/.agent/diagrams/page.html
+```
+
+It resolves the custom properties for both themes and reports every pair below its floor. Contrast is arithmetic — check it rather than judging it.
+
 ## Theme Setup
 
 Always define both light and dark palettes via custom properties. Start with whichever fits the chosen aesthetic, ensure both work.
 
+Every accent below appears three times — ink, fill, and the ink that goes on the fill. That redundancy is the point: it makes the unreadable combination impossible to write by accident.
+
 ```css
 :root {
-  --font-body: 'Outfit', system-ui, sans-serif;
-  --font-mono: 'Space Mono', 'SF Mono', Consolas, monospace;
+  --font-body: 'Familjen Grotesk', system-ui, sans-serif;
+  --font-mono: 'Fira Code', 'SF Mono', Consolas, monospace;
 
-  --bg: #f8f9fa;
-  --surface: #ffffff;
-  --surface-elevated: #ffffff;
+  /* Neutrals tinted toward the accent hue — never pure #fff/#000 */
+  --bg: #f5f8f9;
+  --surface: #fcfdfe;
+  --surface-elevated: #fdfeff;
   --border: rgba(0, 0, 0, 0.08);
   --border-bright: rgba(0, 0, 0, 0.15);
-  --text: #1a1a2e;
-  --text-dim: #6b7280;
-  --accent: #0891b2;
-  --accent-dim: rgba(8, 145, 178, 0.1);
-  /* Semantic accents for diagram elements */
-  --node-a: #0891b2;
-  --node-a-dim: rgba(8, 145, 178, 0.1);
-  --node-b: #059669;
-  --node-b-dim: rgba(5, 150, 105, 0.1);
-  --node-c: #d97706;
-  --node-c-dim: rgba(217, 119, 6, 0.1);
+  --text: #14202b;        /* body copy — 4.5:1 minimum, and it should beat that comfortably */
+  --text-bright: #070f16; /* headings and emphasis, one step darker than --text */
+  --text-dim: #5b6672;    /* captions/provenance ONLY — still clears 4.5:1 on --surface */
+
+  /* Decoration alpha — deliberately separate from --border.
+     Border alpha is tuned for a crisp 1px edge; reused at 24-48px repeat
+     spacing it reads as an aggressive ruled grid behind the content. */
+  --pattern: rgba(20, 32, 43, 0.045);
+
+  /* Accents: ink reads as text, fill sits under text, on-fill is the ink for the fill */
+  --accent: #0f766e;          /* 5.5:1 on --surface  */
+  --accent-fill: #0f766e;
+  --accent-on-fill: #f0fdfa;  /* 5.2:1 on --accent-fill */
+  --accent-dim: rgba(15, 118, 110, 0.10);
+
+  /* Semantic accents for diagram elements — same three-part shape */
+  --node-a: #0f766e;
+  --node-a-dim: rgba(15, 118, 110, 0.10);
+  --node-b: #15803d;
+  --node-b-dim: rgba(21, 128, 61, 0.10);
+  --node-c: #b45309;
+  --node-c-dim: rgba(180, 83, 9, 0.10);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -37,8 +80,15 @@ Always define both light and dark palettes via custom properties. Start with whi
     --border: rgba(255, 255, 255, 0.06);
     --border-bright: rgba(255, 255, 255, 0.12);
     --text: #e6edf3;
-    --text-dim: #8b949e;
+    --text-bright: #f6f9fc;
+    --text-dim: #9dabb8;     /* lifted from the usual #8b949e — dim must still clear 4.5:1 */
+    --pattern: rgba(230, 237, 243, 0.04);
+
+    /* Ink flips bright on dark. Fill stays DEEP so light ink can sit on it —
+       the bright ink tone is never reused as a fill. */
     --accent: #22d3ee;
+    --accent-fill: #0e5b6b;
+    --accent-on-fill: #ecfeff;
     --accent-dim: rgba(34, 211, 238, 0.12);
     --node-a: #22d3ee;
     --node-a-dim: rgba(34, 211, 238, 0.12);
@@ -50,12 +100,42 @@ Always define both light and dark palettes via custom properties. Start with whi
 }
 ```
 
+**Using a fill.** Whenever an accent becomes a background with text on it, both tokens travel together — never one without the other:
+
+```css
+/* RIGHT — the pair guarantees contrast in both themes */
+.badge-solid {
+  background: var(--accent-fill);
+  color: var(--accent-on-fill);
+}
+
+/* WRONG — white on whatever tone --accent happens to be.
+   Light theme: 3.7:1. Dark theme: 1.8:1. Both fail. */
+.badge-solid {
+  background: var(--accent);
+  color: #fff;
+}
+```
+
+If an aesthetic genuinely calls for a bright fill (a risograph spot color, a terminal green badge), keep it — but flip the ink to the palette's near-black rather than reaching for white:
+
+```css
+.badge-bright {
+  background: var(--node-c);          /* #fbbf24 amber */
+  color: var(--bg);                   /* near-black — 11:1, not 1.8:1 */
+}
+```
+
 ## Background Atmosphere
 
 Flat backgrounds feel dead. Use subtle gradients or patterns.
 
+Two rules govern all of them. **Patterns use `--pattern`, never `--border`** — border alpha is calibrated for a crisp 1px edge and turns into hard ruled lines when repeated. And **patterns live behind surfaces, not behind prose**: a page background may carry texture as long as the reading content sits on opaque `--surface` cards. Text floating directly over stripes is a defect regardless of how faint they are, because the lines cut through the letterforms.
+
+Keep decoration at or below 0.06 alpha in light themes and 0.05 in dark, and keep repeat spacing at 24px or wider — tighter than that and it reads as stripes rather than texture.
+
 ```css
-/* Radial glow behind focal area */
+/* Radial glow behind focal area — the safest option, no linework at all */
 body {
   background: var(--bg);
   background-image: radial-gradient(ellipse at 50% 0%, var(--accent-dim) 0%, transparent 60%);
@@ -64,16 +144,16 @@ body {
 /* Faint dot grid */
 body {
   background-color: var(--bg);
-  background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+  background-image: radial-gradient(circle, var(--pattern) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
-/* Diagonal subtle lines */
+/* Diagonal subtle lines — wide spacing, pattern alpha, and content must sit on cards */
 body {
   background-color: var(--bg);
   background-image: repeating-linear-gradient(
-    -45deg, transparent, transparent 40px,
-    var(--border) 40px, var(--border) 41px
+    -45deg, transparent, transparent 47px,
+    var(--pattern) 47px, var(--pattern) 48px
   );
 }
 
@@ -86,9 +166,41 @@ body {
 }
 ```
 
+**Dropping the pattern out behind text.** When prose has to sit on the page background rather than a card, give it its own opaque backdrop instead of turning the pattern down until it's invisible everywhere:
+
+```css
+.prose-on-pattern {
+  background: var(--bg);   /* opaque — masks the body pattern behind this block */
+  border-radius: 12px;
+  padding: 24px 28px;
+}
+```
+
+**Patterned fills inside content** — hatched "blocked time" bars, striped progress segments, cross-hatch legend swatches — are the worst offender, because they put stripes directly under a label. Keep the stripes at `--pattern` strength over a solid wash, and set the label in `--text`:
+
+```css
+/* RIGHT — texture reads, label stays on a solid wash */
+.bar-blocked {
+  background-color: var(--node-c-dim);
+  background-image: repeating-linear-gradient(
+    135deg, transparent, transparent 7px,
+    var(--pattern) 7px, var(--pattern) 8px
+  );
+  color: var(--text);
+}
+
+/* WRONG — 6px hard stripes in a mid-tone, dim ink on top */
+.bar-blocked {
+  background: repeating-linear-gradient(135deg, var(--node-c), var(--node-c) 6px, transparent 6px, transparent 12px);
+  color: var(--text-dim);
+}
+```
+
 ## Link Styling
 
-**Never rely on browser default link colors.** The default blue (`#0000EE`) has poor contrast on dark backgrounds. Style links with `color: var(--accent)` and keep underlines for discoverability. On dark backgrounds, use bright accents (`#22d3ee`, `#34d399`, `#fbbf24`). On light backgrounds, use deeper tones (`#0891b2`, `#059669`, `#d97706`).
+**Never rely on browser default link colors.** The default blue (`#0000EE`) has poor contrast on dark backgrounds. Style links with `color: var(--accent)` and keep underlines for discoverability — the underline is what makes links identifiable without relying on color.
+
+On dark backgrounds, use bright accents (`#22d3ee`, `#34d399`, `#fbbf24`). On light backgrounds, go genuinely deep — `#0f766e`, `#15803d`, `#b45309`, `#be123c`. The half-step tones that look deep enough (`#0891b2`, `#059669`, `#d97706`) all land near 3.5:1 on white and fail as body-size text.
 
 ## Section / Card Components
 
@@ -105,9 +217,11 @@ The fundamental building block. A colored card representing a system component, 
   position: relative;
 }
 
-/* Colored accent border (left or top) */
+/* Colored accent variant — full tinted border + faint background wash
+   (side-stripes are banned; see Anti-Patterns in SKILL.md) */
 .ve-card--accent-a {
-  border-left: 3px solid var(--node-a);
+  border-color: color-mix(in srgb, var(--node-a) 45%, var(--border));
+  background: color-mix(in srgb, var(--node-a) 6%, var(--surface));
 }
 
 /* --- Depth tiers: vary card depth to signal importance --- */
@@ -452,256 +566,7 @@ By default, `list-style-position: outside` places list markers (bullets, numbers
 
 ## Mermaid Containers
 
-Mermaid diagrams have two common layout issues: they render too small to read, and they left-align in their container leaving awkward dead space (especially for narrow vertical flowcharts).
-
-### Centering (Required)
-
-Mermaid SVGs render at a fixed size based on content. Without explicit centering, they default to top-left alignment. **Always center Mermaid diagrams** — narrow vertical flowcharts look particularly bad when left-aligned in a wide container.
-
-```css
-/* WRONG — diagram hugs left edge */
-.mermaid-container {
-  padding: 24px;
-  border: 1px solid var(--border);
-}
-
-/* RIGHT — diagram centers in container */
-.mermaid-wrap {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;  /* or center for shorter diagrams */
-  padding: 24px;
-  border: 1px solid var(--border);
-}
-```
-
-### Scaling Small Diagrams
-
-Mermaid sizes diagrams based on content, not container. Complex diagrams with many nodes render small to fit everything, leaving the text nearly unreadable. Three fixes:
-
-**1. Increase fontSize in themeVariables** (most effective):
-```javascript
-mermaid.initialize({
-  theme: 'base',
-  themeVariables: {
-    fontSize: '18px',  // default is 16px, bump to 18-20px for complex diagrams
-  }
-});
-```
-
-**2. CSS zoom** for diagrams that still render too small:
-```css
-.mermaid-wrap--scaled .mermaid {
-  zoom: 1.3;
-}
-```
-
-**3. Constrain container width** so the diagram doesn't float in dead space:
-```css
-.mermaid-wrap--constrained {
-  max-width: 800px;
-  margin: 0 auto;
-}
-```
-
-**Rule of thumb:** If the diagram has 10+ nodes or the text is smaller than 12px rendered, increase fontSize to 18-20px or apply CSS zoom.
-
-### Zoom Controls
-
-Add zoom controls to every `.mermaid-wrap` container for complex diagrams.
-
-**Small diagrams in slides.** If a diagram has fewer than ~7 nodes with no branching, it will render tiny in a full-viewport slide container. For simple linear flows (A → B → C → D), use CSS pipeline cards instead of Mermaid — see `slide-patterns.md` "CSS Pipeline Slide." Reserve Mermaid for complex graphs where automatic edge routing is actually needed.
-
-### Full Pattern
-
-```css
-.mermaid-wrap {
-  position: relative;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 32px 24px;
-  overflow: auto;
-  /* CRITICAL: center the diagram both horizontally and vertically */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  /* Prevent vertical flowcharts from compressing into unreadable thumbnails */
-  min-height: 400px;
-}
-
-/* For shorter diagrams that don't need the full height */
-.mermaid-wrap--compact { min-height: 200px; }
-
-/* For very tall vertical flowcharts */
-.mermaid-wrap--tall { min-height: 600px; }
-
-.zoom-controls {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  display: flex;
-  gap: 2px;
-  z-index: 10;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 2px;
-}
-
-.zoom-controls button {
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: transparent;
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  cursor: pointer;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.zoom-controls button:hover {
-  background: var(--border);
-  color: var(--text);
-}
-
-.mermaid-wrap { cursor: grab; }
-.mermaid-wrap.is-panning { cursor: grabbing; user-select: none; }
-
-/* Multi-diagram structure */
-.diagram-shell {
-  position: relative;
-}
-
-.diagram-shell__hint {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-dim);
-  margin-bottom: 8px;
-  opacity: 0.7;
-}
-
-.mermaid-viewport {
-  position: relative;
-  overflow: hidden;
-  width: 100%;
-  height: 100%;
-  min-height: 300px;
-}
-
-.mermaid-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
-.zoom-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-dim);
-  padding: 0 6px;
-  white-space: nowrap;
-}
-```
-
-**How the new zoom/pan engine works:**
-
-The SVG is rendered into `.mermaid-canvas` which is absolutely positioned inside `.mermaid-viewport`. Zooming sets the SVG's `width` and `height` styles directly. Panning applies `transform: translate()` to the canvas. The viewport has `overflow: hidden` to clip the panned content. This approach avoids CSS `zoom` (which had cross-browser quirks) and gives precise control over the diagram's size and position.
-
-### HTML
-
-```html
-<section class="diagram-shell">
-  <p class="diagram-shell__hint">
-    Ctrl/Cmd + wheel to zoom. Scroll to pan. Drag to pan when zoomed. Double-click to fit.
-  </p>
-  <div class="mermaid-wrap">
-    <div class="zoom-controls">
-      <button type="button" data-action="zoom-in" title="Zoom in">+</button>
-      <button type="button" data-action="zoom-out" title="Zoom out">&minus;</button>
-      <button type="button" data-action="zoom-fit" title="Smart fit">&#8634;</button>
-      <button type="button" data-action="zoom-one" title="1:1 zoom">1:1</button>
-      <button type="button" data-action="zoom-expand" title="Open full size">&#x26F6;</button>
-      <span class="zoom-label">Loading...</span>
-    </div>
-    <div class="mermaid-viewport">
-      <div class="mermaid mermaid-canvas"></div>
-    </div>
-  </div>
-  <script type="text/plain" class="diagram-source">
-    graph TD
-      A --> B
-  </script>
-</section>
-```
-
-Use one `.diagram-shell` per diagram. The source Mermaid text lives in `<script type="text/plain" class="diagram-source">`, so multiple diagrams can coexist on a page without ID collisions.
-
-### JavaScript
-
-Use a closure-based initializer. Per-diagram state lives inside `initDiagram(shell)`, while shared drag listeners stay at module scope:
-
-```javascript
-const config = { /* fitPadding, zoom bounds, readabilityFloor */ };
-const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
-let activeDrag = null;
-
-addEventListener('mousemove', (e) => activeDrag?.onMove(e));
-addEventListener('mouseup', () => { activeDrag?.onEnd(); activeDrag = null; });
-
-function initDiagram(shell) {
-  const wrap = shell.querySelector('.mermaid-wrap');
-  const viewport = shell.querySelector('.mermaid-viewport');
-  const canvas = shell.querySelector('.mermaid-canvas');
-  const source = shell.querySelector('.diagram-source');
-  const label = shell.querySelector('.zoom-label');
-
-  if (!wrap || !viewport || !canvas || !source || !label) {
-    console.error('initDiagram: missing required elements in', shell);
-    return;
-  }
-
-  // Per-diagram state in closure
-  let zoom = 1;
-  let fitMode = 'contain';
-  let panX = 0;
-  let panY = 0;
-  let svgW = 0;
-  let svgH = 0;
-
-  async function render() {
-    try {
-      const code = source.textContent.trim();
-      if (!code) {
-        label.textContent = 'Error: Empty source';
-        return;
-      }
-
-      const id = 'diagram-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
-      const { svg } = await mermaid.render(id, code);
-      canvas.innerHTML = svg;
-
-      // readSvgNaturalSize(svgNode) + setAdaptiveHeight() + fitDiagram()
-      // wire controls from data-action attributes
-      // wire wheel/drag/touch handlers scoped to this shell
-    } catch (err) {
-      console.error('Mermaid render failed:', err);
-      label.textContent = 'Error: ' + (err.message || 'Render failed');
-    }
-  }
-
-  render();
-}
-
-document.querySelectorAll('.diagram-shell').forEach(initDiagram);
-```
-
-This pattern removes all hardcoded IDs and supports unlimited diagrams per page. For the full implementation (including smart fit, pinch zoom, and shared drag state), use `templates/mermaid-flowchart.html` as the canonical source.
+The full Mermaid container pattern (centering, scaling, zoom/pan controls, diagram-shell HTML and JS) lives in [`mermaid.md`](mermaid.md), with `templates/mermaid-flowchart.html` as the canonical implementation.
 
 ## Grid Layouts
 
@@ -873,6 +738,8 @@ Use real `<table>` elements for tabular data. Wrap in a scrollable container for
 
 Styled spans for match/gap/warning states. Never use emoji.
 
+These run at 11px on a tint of their own hue — the exact place contrast quietly fails. The semantic defaults below are one step deeper than the reflex picks (`#059669` → `#15803d`, `#ef4444` → `#dc2626`, `#d97706` → `#b45309`), which reads as the same color while clearing 4.5:1 on a light surface. In dark themes the ink flips bright and the same rule applies in reverse.
+
 ```css
 .status {
   display: inline-flex;
@@ -880,25 +747,27 @@ Styled spans for match/gap/warning states. Never use emoji.
   gap: 6px;
   font-family: var(--font-mono);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;  /* 500 at 11px in a hue is thin — 600 buys back apparent contrast */
   padding: 3px 10px;
   border-radius: 6px;
   white-space: nowrap;
 }
 
+/* Fallbacks are the deep tones. Never fall back to #059669/#ef4444/#d97706 —
+   all three sit near 3:1 as 11px text on white. */
 .status--match {
-  background: var(--green-dim, rgba(5, 150, 105, 0.1));
-  color: var(--green, #059669);
+  background: var(--green-dim, rgba(21, 128, 61, 0.1));
+  color: var(--green, #15803d);
 }
 
 .status--gap {
-  background: var(--red-dim, rgba(239, 68, 68, 0.1));
-  color: var(--red, #ef4444);
+  background: var(--red-dim, rgba(220, 38, 38, 0.1));
+  color: var(--red, #dc2626);
 }
 
 .status--warn {
-  background: var(--orange-dim, rgba(217, 119, 6, 0.1));
-  color: var(--orange, #d97706);
+  background: var(--orange-dim, rgba(180, 83, 9, 0.1));
+  color: var(--orange, #b45309);
 }
 
 .status--info {
@@ -906,7 +775,9 @@ Styled spans for match/gap/warning states. Never use emoji.
   color: var(--accent);
 }
 
-/* Dot variant (compact, no text) */
+/* Dot variant (compact, no text).
+   A dot alone is color-as-sole-indicator — always pair it with a text label
+   or a title attribute so it survives color blindness and grayscale printing. */
 .status-dot {
   width: 8px;
   height: 8px;
@@ -914,9 +785,23 @@ Styled spans for match/gap/warning states. Never use emoji.
   display: inline-block;
 }
 
-.status-dot--match { background: var(--green, #059669); }
-.status-dot--gap { background: var(--red, #ef4444); }
-.status-dot--warn { background: var(--orange, #d97706); }
+.status-dot--match { background: var(--green, #15803d); }
+.status-dot--gap { background: var(--red, #dc2626); }
+.status-dot--warn { background: var(--orange, #b45309); }
+```
+
+**Solid-fill status badges.** If the design wants filled pills rather than tints, the ink is the palette's near-black or near-white — not `#fff` by default:
+
+```css
+.status--solid-match {
+  background: var(--green, #15803d);
+  color: var(--surface);       /* deep fill → light ink: 5.0:1 */
+}
+
+.status--solid-warn {
+  background: var(--orange-bright, #fbbf24);
+  color: var(--text-bright);   /* bright fill → dark ink: 11:1 (white here would be 1.9:1) */
+}
 ```
 
 Usage in table cells:
@@ -1254,8 +1139,12 @@ Large hero number with trend indicator and label. For dashboards, review summari
   margin-top: 4px;
 }
 
-.kpi-card__trend--up { color: var(--node-b, #059669); }
-.kpi-card__trend--down { color: var(--red, #ef4444); }
+/* 12px semantic text — needs the deep tones, and a glyph so the up/down
+   distinction doesn't rest on color alone. */
+.kpi-card__trend--up { color: var(--node-b, #15803d); }
+.kpi-card__trend--down { color: var(--red, #dc2626); }
+.kpi-card__trend--up::before { content: '▲ '; font-size: 9px; }
+.kpi-card__trend--down::before { content: '▼ '; font-size: 9px; }
 ```
 
 ```html
@@ -1294,16 +1183,18 @@ Two-column comparison with diff-colored headers. For review pages, migration doc
   padding: 10px 16px;
 }
 
+/* 11px uppercase mono on a tint of its own hue — use the deep tones.
+   Before/after also carries a word, so the panels don't rely on color alone. */
 .diff-panel__header--before {
-  background: var(--red-dim, rgba(239, 68, 68, 0.08));
-  color: var(--red, #ef4444);
-  border-bottom: 2px solid var(--red, #ef4444);
+  background: var(--red-dim, rgba(220, 38, 38, 0.08));
+  color: var(--red, #dc2626);
+  border-bottom: 2px solid var(--red, #dc2626);
 }
 
 .diff-panel__header--after {
-  background: var(--green-dim, rgba(5, 150, 105, 0.08));
-  color: var(--green, #059669);
-  border-bottom: 2px solid var(--green, #059669);
+  background: var(--green-dim, rgba(21, 128, 61, 0.08));
+  color: var(--green, #15803d);
+  border-bottom: 2px solid var(--green, #15803d);
 }
 
 .diff-panel__body {
@@ -1395,6 +1286,200 @@ details.collapsible .collapsible__body {
 </details>
 ```
 
+## Interactive Controls
+
+Patterns for tool pages (see `tool-patterns.md`) and any page with real inputs — browsers' search fields and facet pills included. Controls are where the contrast contract gets broken most: a button is a fill with text on it, a focus ring is meaningful non-text (3:1 floor), and native sliders ignore your palette entirely unless restyled per-engine. Everything below runs on the same tokens as the rest of the page.
+
+### Buttons
+
+One primary button per view — on a tool page that's the export button. Everything else steps down:
+
+```css
+button {
+  font: inherit;              /* buttons don't inherit font by default */
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 7px 14px;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease,
+              filter 0.15s ease, transform 0.1s ease;
+}
+button:active { transform: translateY(1px); }
+button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+.btn-primary {                /* the export button — the fill pair, never accent + #fff */
+  background: var(--accent-fill);
+  color: var(--accent-on-fill);
+}
+.btn-primary:hover { filter: brightness(1.08); }
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border-bright);
+}
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+.btn-ghost {                  /* tertiary: ink only, background appears on hover */
+  background: transparent;
+  color: var(--accent);
+}
+.btn-ghost:hover { background: var(--accent-dim); }
+
+@media (pointer: coarse) {    /* 44px touch floor on touch-primary devices */
+  button { min-height: 44px; }
+}
+```
+
+**Copied feedback:** on export, swap the button's label to "Copied ✓" for ~1.5s by toggling a class — keep the button's width fixed (`min-width` set to its widest label) so the page doesn't reflow under the cursor, and give the button `aria-live="polite"` so the swap is announced to screen readers.
+
+### Focus rings
+
+Every interactive element gets a visible `:focus-visible` ring — it's the keyboard path's only affordance, and it's non-text UI carrying meaning, so it has the 3:1 floor against the surface it sits on:
+
+```css
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+```
+
+The `--accent` ink already clears 4.5:1 as text, so it clears the 3:1 ring floor for free. Never `outline: none` without a replacement.
+
+### Text inputs, selects, textareas
+
+```css
+input[type="text"], input[type="search"], select, textarea {
+  font: inherit;              /* form controls don't inherit font either */
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-bright);
+  border-radius: 6px;
+  padding: 7px 10px;
+}
+input:disabled, select:disabled, textarea:disabled { opacity: 0.55; cursor: not-allowed; }
+
+input::placeholder { color: var(--text-dim); }  /* skippable info — dim is correct here */
+
+textarea { resize: vertical; min-height: 90px; line-height: 1.55; }
+
+@media (pointer: coarse) {
+  input, select, textarea { font-size: max(16px, 1em); }  /* below 16px, iOS Safari zooms on focus */
+}
+```
+
+Editable code/prompt panes (tuners, template editors) take `font-family: var(--font-mono)` and the recessed treatment from Code Blocks; keep `tab-size: 2`.
+
+### Range sliders
+
+Native tracks and thumbs are engine-drawn and ignore the palette; restyle both engines or the slider is the one off-brand element on the page:
+
+```css
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--border-bright);
+  border-radius: 2px;
+}
+input[type="range"]::-moz-range-track {   /* Firefox draws its own track unless told not to */
+  background: transparent;
+  height: 4px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  cursor: grab;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  cursor: grab;
+}
+input[type="range"]:active::-webkit-slider-thumb { cursor: grabbing; }
+input[type="range"]:active::-moz-range-thumb { cursor: grabbing; }
+```
+
+Every slider pairs with a live readout — `var(--font-mono)`, `tabular-nums`, updated on `input` — because in a parameter sandbox the number *is* the deliverable.
+
+### Toggles
+
+A checkbox styled as a switch; the on-state uses the fill pair:
+
+```css
+.switch { position: relative; width: 34px; height: 20px; display: inline-block; }
+.switch input { opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.switch .knob {
+  position: absolute; inset: 0;
+  background: var(--border-bright);
+  border-radius: 10px;
+  pointer-events: none;
+  transition: background 0.15s ease;
+}
+.switch .knob::after {
+  content: '';
+  position: absolute; top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--surface);
+  transition: transform 0.15s ease;
+}
+.switch input:checked + .knob { background: var(--accent-fill); }
+.switch input:checked + .knob::after { transform: translateX(14px); }
+.switch input:disabled { cursor: not-allowed; }
+.switch input:disabled + .knob { opacity: 0.55; }
+```
+
+Pair every switch with a visible text label — the switch alone fails the squint test as "which way is on?".
+
+### Drag states
+
+Three states, all driven by classes the JS toggles — and all with a keyboard twin (selected + arrow keys), which reuses the same visual states:
+
+```css
+.card.is-dragging, .card.is-grabbed {   /* pointer drag and keyboard pickup look the same */
+  opacity: 0.85;
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  cursor: grabbing;
+}
+
+.column.is-drop-target {
+  background: var(--accent-dim);
+  outline: 1.5px dashed var(--accent);
+  outline-offset: -1.5px;
+}
+```
+
+The drop target gets a wash plus dashed outline — a state change a colorblind user still reads from the outline alone.
+
+### Validation and warnings
+
+Constraint violations (a flag enabled without its prerequisite, a regex that doesn't compile) sit **with the field**, appearing as the violation happens:
+
+```css
+.field.is-invalid input { border-color: var(--node-c); }
+
+.field-warning {
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--node-c);              /* ink tone — clears 4.5:1 like any small text */
+  background: var(--node-c-dim);
+  border: 1px solid color-mix(in srgb, var(--node-c) 30%, transparent);
+  border-radius: 5px;
+  padding: 5px 9px;
+}
+```
+
+Full tinted border and wash — the message reads as attached to its field. A warning that only changes a border color fails the squint test; the text is what says *why*.
+
+Wire it for assistive tech too: point the input at its message with `aria-describedby`, and give the message container `role="status"` so a warning that appears mid-edit is announced without stealing focus.
+
 ## Prose Page Elements
 
 Patterns for documentation, articles, blog posts, and other reading-first content. The key difference from visual explanations: optimize for sustained reading, not scanning.
@@ -1458,11 +1543,21 @@ Opening paragraph styled distinctly from body text.
 Key insights pulled out for emphasis. Use sparingly — one or two per article maximum.
 
 ```css
-/* Border left — most versatile */
+/* Indented with oversized quote mark */
 .pullquote {
   margin: 48px 0;
-  padding-left: 24px;
-  border-left: 3px solid var(--accent);
+  padding-left: 56px;
+  position: relative;
+}
+.pullquote::before {
+  content: '\201C';
+  position: absolute;
+  left: 0;
+  top: -8px;
+  font-family: var(--font-display);
+  font-size: 64px;
+  line-height: 1;
+  color: var(--accent);
 }
 .pullquote p {
   font-size: 22px;
@@ -1597,10 +1692,11 @@ hr {
 For warnings, tips, notes, and key takeaways.
 
 ```css
+/* Full tinted border + background wash */
 .callout {
   padding: 16px 20px;
   border-radius: 8px;
-  border-left: 4px solid var(--callout-border);
+  border: 1px solid color-mix(in srgb, var(--callout-border) 35%, transparent);
   background: var(--callout-bg);
   margin: 24px 0;
 }
@@ -1620,10 +1716,21 @@ For warnings, tips, notes, and key takeaways.
   --callout-bg: color-mix(in srgb, var(--green) 10%, transparent);
 }
 
+/* Title takes the accent's INK tone, not the border tone — the border color is
+   chosen to read as a 1px edge (3:1 is enough there) and is usually too light
+   to carry text. They're often the same value; when they differ, ink wins. */
 .callout__title {
   font-weight: 600;
   margin-bottom: 8px;
-  color: var(--callout-border);
+  color: var(--callout-ink, var(--callout-border));
+}
+
+/* Callout body stays in --text. Setting it in the accent hue or in --text-dim
+   is the most common way a callout ends up less readable than the prose
+   around it — which inverts the whole point of a callout. */
+.callout p,
+.callout li {
+  color: var(--text);
 }
 
 /* Lists inside callouts need padding fix */
@@ -1639,12 +1746,15 @@ Use `data-theme` attribute for user-controllable light/dark modes. Random initia
 
 ```css
 :root, [data-theme="light"] {
-  --bg: #fafaf9;
-  --surface: #ffffff;
+  --bg: #faf9f7;
+  --surface: #fffefc;
   --text: #1c1917;
-  --text-dim: #78716c;
+  --text-dim: #6b635c;      /* 5.9:1 on --surface */
   --border: #e7e5e4;
-  --accent: #0d9488;
+  --pattern: rgba(28, 25, 23, 0.045);
+  --accent: #0f766e;        /* 5.4:1 — #0d9488 is only 3.7:1 */
+  --accent-fill: #0f766e;
+  --accent-on-fill: #f0fdfa;
 }
 
 [data-theme="dark"] {
@@ -1653,9 +1763,14 @@ Use `data-theme` attribute for user-controllable light/dark modes. Random initia
   --text: #fafaf9;
   --text-dim: #a8a29e;
   --border: #292524;
-  --accent: #14b8a6;
+  --pattern: rgba(250, 249, 249, 0.04);
+  --accent: #14b8a6;        /* bright ink for dark surfaces */
+  --accent-fill: #115e56;   /* fill stays deep so light ink can sit on it */
+  --accent-on-fill: #f0fdfa;
 }
 ```
+
+Both themes must be checked, not just the one you designed in. A `[data-theme]` toggle makes this cheap — flip it and re-run the contrast check.
 
 ```javascript
 // Random initial theme
@@ -1704,7 +1819,9 @@ Avoid these in reading-first content:
 - Measure wider than 75ch (text spanning full viewport)
 - Pull quotes every other paragraph
 - Drop caps on every section
-- Busy background patterns behind text
+- Busy background patterns behind text — prose needs an opaque surface under it, always
+- Body copy set in `--text-dim`, or in an accent hue, "for warmth" — warmth comes from tinted neutrals and accented headings, not from fading the words
+- Pull quotes and lead paragraphs in a lighter tone than the body they're meant to emphasize (they use `--text-bright`, which is *darker* than `--text` on light themes)
 
 ## Generated Images
 

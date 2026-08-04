@@ -10,43 +10,56 @@
   and teal (mermaid) templates so agents absorb variety.
   Key patterns demonstrated:
   - Rose/cranberry palette (NOT indigo/violet)
-  - KPI summary cards above the table (visual hook before the data)
-  - Collapsible <details> section (replaces static callout)
-  - Depth tiers: elevated KPIs, default table, collapsible for secondary
-  - Real <table> element with sticky header, alternating rows
-  - Status indicator badges (match, gap, partial)
-  - Text wrapping in wide columns, code references in cells
+  - Single-line stat strip: prose sentence with inline emphasized figures
+    (no KPI card grid — that pattern is banned)
+  - Asymmetric layout: wide table column + narrow annotation rail of
+    margin notes tied to specific rows; rail collapses inline on mobile
+  - Serif-italic section labels (a different labeling voice from the
+    uppercase-mono micro-label used elsewhere)
+  - Real <table> element with a WORKING sticky header: the scroll
+    container has a max-height so position:sticky engages
+  - Status indicator badges as styled spans (never emoji)
+  - tabular-nums, text wrapping in wide columns, code refs in cells
   - Summary footer row with aggregate status
-  - Staggered row animation via --i variable
+  - No entrance animation: content renders immediately (deliberate —
+    the fadeUp stagger is shared DNA with sibling templates)
   - Both light and dark themes via prefers-color-scheme
   - Responsive horizontal scroll wrapper
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Besley:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   /* ============ THEME ============ */
   :root {
-    --font-body: 'Instrument Serif', 'Georgia', serif;
+    --font-body: 'Besley', 'Georgia', serif;
     --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
     --font-sans: system-ui, -apple-system, sans-serif;
 
     --bg: #fff5f5;
     --surface: #ffffff;
     --surface2: #fef0ee;
-    --surface-elevated: #fff8f7;
+    --zebra: rgba(28, 25, 23, 0.025);
     --border: rgba(0, 0, 0, 0.07);
     --border-bright: rgba(0, 0, 0, 0.14);
+    --pattern: rgba(28, 25, 23, 0.045);
     --text: #1c1917;
-    --text-dim: #78716c;
+    --text-bright: #0e0c0b;
+    --text-dim: #706561;
     --accent: #be123c;
+    --accent-fill: #be123c;
+    --accent-on-fill: #fff5f5;
     --accent-dim: rgba(190, 18, 60, 0.06);
-    --green: #16a34a;
-    --green-dim: rgba(22, 163, 74, 0.08);
-    --red: #dc2626;
-    --red-dim: rgba(220, 38, 38, 0.08);
-    --orange: #d97706;
-    --orange-dim: rgba(217, 119, 6, 0.08);
+    /* Status colors run at 11px on an 8% tint of themselves — the deepest
+       point in the page's contrast budget. Each clears 4.5:1 against that
+       tint, not merely against white, which is a full step deeper than the
+       usual #15803d / #dc2626 / #b45309 picks. */
+    --green: #146b34;
+    --green-dim: rgba(20, 107, 52, 0.08);
+    --red: #c81e1e;
+    --red-dim: rgba(200, 30, 30, 0.08);
+    --orange: #a34a08;
+    --orange-dim: rgba(163, 74, 8, 0.08);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -54,12 +67,18 @@
       --bg: #1a0a0a;
       --surface: #231414;
       --surface2: #2e1b1b;
-      --surface-elevated: #351f1f;
+      --zebra: rgba(253, 226, 226, 0.03);
       --border: rgba(255, 255, 255, 0.06);
       --border-bright: rgba(255, 255, 255, 0.12);
+      --pattern: rgba(253, 226, 226, 0.04);
       --text: #fde2e2;
-      --text-dim: #c9a3a3;
+      --text-bright: #fef4f4;
+      --text-dim: #cfa9a9;
+      /* Bright ink on near-black. Never a fill for light text — white on
+         #fb7185 is 2.7:1; the fill pair below is what carries text. */
       --accent: #fb7185;
+      --accent-fill: #8f1734;
+      --accent-on-fill: #fff1f3;
       --accent-dim: rgba(251, 113, 133, 0.12);
       --green: #4ade80;
       --green-dim: rgba(74, 222, 128, 0.1);
@@ -75,24 +94,17 @@
 
   body {
     background: var(--bg);
-    background-image:
-      radial-gradient(ellipse at 30% 0%, var(--accent-dim) 0%, transparent 50%),
-      radial-gradient(ellipse at 70% 100%, var(--green-dim) 0%, transparent 40%);
     color: var(--text);
     font-family: var(--font-sans);
     padding: 40px;
     min-height: 100vh;
+    /* One quiet fade on the whole page; nothing staggers. */
+    animation: pageIn 0.4s ease-out both;
   }
 
-  /* ============ ANIMATION ============ */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .animate {
-    animation: fadeUp 0.35s ease-out both;
-    animation-delay: calc(var(--i, 0) * 0.04s);
+  @keyframes pageIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -103,9 +115,14 @@
     }
   }
 
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
   /* ============ CONTAINER ============ */
   .container {
-    max-width: 1000px;
+    max-width: 1100px;
     margin: 0 auto;
   }
 
@@ -120,27 +137,57 @@
 
   .subtitle {
     color: var(--text-dim);
-    font-family: var(--font-mono);
-    font-size: 12px;
-    margin-bottom: 32px;
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 15px;
+    margin-bottom: 28px;
+  }
+
+  /* ============ STAT STRIP ============ */
+  /* A single sentence with inline emphasized figures — not a card grid. */
+  .stat-strip {
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.6;
+    max-width: 62ch;
+    margin-bottom: 12px;
+  }
+
+  .stat-strip .fig {
+    font-size: 24px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .fig--green { color: var(--green); }
+  .fig--red { color: var(--red); }
+  .fig--orange { color: var(--orange); }
+
+  /* ============ SECTION LABELS ============ */
+  /* Serif italic labels — deliberately not uppercase-mono-with-dot. */
+  .section-label {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 14px;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border-bright);
+    padding-bottom: 6px;
+    margin: 28px 0 14px;
   }
 
   /* ============ LEGEND ============ */
   .legend {
     display: flex;
-    gap: 16px;
+    gap: 18px;
     flex-wrap: wrap;
-    margin-bottom: 20px;
-  }
-
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-family: var(--font-mono);
-    font-size: 11px;
+    margin-bottom: 16px;
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 13px;
     color: var(--text-dim);
   }
+
+  .legend-item { display: flex; align-items: center; gap: 7px; }
 
   .legend-swatch {
     width: 10px;
@@ -148,16 +195,59 @@
     border-radius: 3px;
   }
 
+  /* ============ ASYMMETRIC LAYOUT ============ */
+  /* Wide table + narrow annotation rail. Asymmetry is the point. */
+  .audit-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 230px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .audit-layout > * { min-width: 0; }
+
+  .rail {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: sticky;
+    top: 24px;
+  }
+
+  .rail-note {
+    font-family: var(--font-body);
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-dim);
+    padding-left: 12px;
+    border-left: 1px solid var(--border-bright);
+  }
+
+  .rail-note .rail-ref {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    margin-bottom: 3px;
+  }
+
+  /* Push notes toward the rows they annotate (approximate alignment). */
+  .rail-note--mid { margin-top: 120px; }
+  .rail-note--end { margin-top: auto; }
+
   /* ============ TABLE WRAPPER ============ */
   .table-wrap {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 12px;
     overflow: hidden;
-    margin-bottom: 24px;
   }
 
+  /* max-height makes the sticky thead actually engage;
+     overflow-x keeps horizontal scroll working on narrow screens. */
   .table-scroll {
+    max-height: min(70vh, 640px);
+    overflow-y: auto;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -170,23 +260,19 @@
     line-height: 1.55;
   }
 
-  /* Header */
-  .data-table thead {
+  /* Header — sticky against .table-scroll's vertical scrolling. */
+  .data-table thead th {
     position: sticky;
     top: 0;
     z-index: 2;
-  }
-
-  .data-table th {
     background: var(--surface2);
-    font-family: var(--font-mono);
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 13px;
+    font-weight: 400;
     color: var(--text-dim);
     text-align: left;
-    padding: 14px 16px;
+    padding: 12px 16px;
     border-bottom: 2px solid var(--border-bright);
     white-space: nowrap;
   }
@@ -202,27 +288,28 @@
     border-bottom: none;
   }
 
+  /* Row-number column, right-aligned tabular numerals */
+  .data-table .num {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    color: var(--text-dim);
+    width: 1%;
+  }
+
   /* Wide text column */
   .data-table .wide {
-    min-width: 220px;
+    min-width: 200px;
     max-width: 440px;
   }
 
-  /* Alternating rows */
+  /* Zebra: neutral, faint lightness shift — never accent-tinted. */
   .data-table tbody tr:nth-child(even) {
-    background: var(--accent-dim);
+    background: var(--zebra);
   }
 
-  /* Row hover + animation stagger */
-  .data-table tbody tr {
-    transition: background 0.15s ease;
-    animation: fadeUp 0.35s ease-out both;
-    animation-delay: calc(var(--i, 0) * 0.04s);
-  }
-
-  .data-table tbody tr:hover {
-    background: var(--border);
-  }
+  /* No row hover: rows are not interactive. */
 
   /* Code in cells */
   .data-table code {
@@ -244,11 +331,9 @@
 
   /* ============ STATUS BADGES ============ */
   .status {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
+    display: inline-block;
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     padding: 3px 10px;
     border-radius: 6px;
@@ -256,28 +341,17 @@
     letter-spacing: 0.3px;
   }
 
-  .status--match {
-    background: var(--green-dim);
-    color: var(--green);
-  }
+  /* Tinted variant: ink is the deep hue, background an 8% wash of it.
+     Both tones are chosen so the pair clears 4.5:1 at this 11px size. */
+  .status--match { background: var(--green-dim); color: var(--green); }
+  .status--gap { background: var(--red-dim); color: var(--red); }
+  .status--partial { background: var(--orange-dim); color: var(--orange); }
 
-  .status--gap {
-    background: var(--red-dim);
-    color: var(--red);
-  }
-
-  .status--partial {
-    background: var(--orange-dim);
-    color: var(--orange);
-  }
-
-  /* Dot before status text */
-  .status::before {
-    content: '';
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: currentColor;
+  /* Solid variant: when a badge needs to carry weight, the ink comes from the
+     fill pair — never a reflexive #fff, which fails against any bright hue. */
+  .status--solid {
+    background: var(--accent-fill);
+    color: var(--accent-on-fill);
   }
 
   /* ============ FOOTER ROW ============ */
@@ -291,57 +365,20 @@
     padding: 14px 16px;
   }
 
-  /* ============ KPI SUMMARY ============ */
-  .kpi-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 14px;
-    margin-bottom: 20px;
-  }
-
-  .kpi-card {
-    background: var(--surface-elevated, var(--surface));
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 18px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  }
-
-  .kpi-card__value {
-    font-family: var(--font-body);
-    font-size: 32px;
-    font-weight: 400;
-    line-height: 1.1;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .kpi-card__value--green { color: var(--green); }
-  .kpi-card__value--red { color: var(--red); }
-  .kpi-card__value--orange { color: var(--orange); }
-
-  .kpi-card__label {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-    color: var(--text-dim);
-    margin-top: 6px;
-  }
-
   /* ============ COLLAPSIBLE ============ */
   details.collapsible {
     border: 1px solid var(--border);
     border-radius: 10px;
     overflow: hidden;
+    margin-top: 24px;
   }
 
   details.collapsible summary {
     padding: 14px 20px;
     background: var(--surface);
-    font-family: var(--font-mono);
-    font-size: 12px;
-    font-weight: 600;
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 14px;
     cursor: pointer;
     list-style: none;
     display: flex;
@@ -352,13 +389,14 @@
   }
 
   details.collapsible summary:hover {
-    background: var(--surface-elevated, var(--surface));
+    background: var(--surface2);
   }
 
   details.collapsible summary::-webkit-details-marker { display: none; }
 
   details.collapsible summary::before {
     content: '▸';
+    font-style: normal;
     font-size: 11px;
     color: var(--text-dim);
     transition: transform 0.15s ease;
@@ -391,6 +429,13 @@
   }
 
   /* ============ RESPONSIVE ============ */
+  @media (max-width: 900px) {
+    /* Rail collapses to inline notes below the table. */
+    .audit-layout { grid-template-columns: minmax(0, 1fr); }
+    .rail { position: static; flex-direction: column; }
+    .rail-note--mid, .rail-note--end { margin-top: 0; }
+  }
+
   @media (max-width: 768px) {
     body { padding: 16px; }
     h1 { font-size: 24px; }
@@ -403,134 +448,160 @@
 
 <div class="container">
 
-  <h1 class="animate" style="--i:0">Requirements Audit</h1>
-  <p class="subtitle animate" style="--i:1">victoria's email vs. implementation plan &mdash; point-by-point review</p>
+  <h1>Requirements Audit</h1>
+  <p class="subtitle">Victoria's email vs. implementation plan — point-by-point review</p>
 
-  <div class="kpi-row animate" style="--i:2">
-    <div class="kpi-card">
-      <div class="kpi-card__value">14</div>
-      <div class="kpi-card__label">Items Reviewed</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-card__value kpi-card__value--green">13</div>
-      <div class="kpi-card__label">Match</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-card__value kpi-card__value--red">1</div>
-      <div class="kpi-card__label">Gap</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-card__value" style="color:var(--accent)">93%</div>
-      <div class="kpi-card__label">Coverage</div>
-    </div>
-  </div>
+  <p class="stat-strip">
+    Of the <span class="fig">14</span> requested items reviewed, the plan covers
+    <span class="fig fig--green">12</span> outright, leaves
+    <span class="fig fig--orange">1</span> partially addressed, and misses
+    <span class="fig fig--red">1</span>: the <code style="font-family:var(--font-mono);font-size:12px;">stoq:restock-modal:submitted</code> event.
+  </p>
 
-  <div class="legend animate" style="--i:3">
+  <div class="section-label">Point-by-point comparison</div>
+
+  <div class="legend">
     <div class="legend-item"><div class="legend-swatch" style="background:var(--green)"></div> Match</div>
-    <div class="legend-item"><div class="legend-swatch" style="background:var(--red)"></div> Gap</div>
     <div class="legend-item"><div class="legend-swatch" style="background:var(--orange)"></div> Partial</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--red)"></div> Gap</div>
   </div>
 
-  <div class="table-wrap animate" style="--i:4">
-    <div class="table-scroll">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th class="wide">Request</th>
-            <th class="wide">Plan</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr style="--i:4">
-            <td class="wide">Template: <code>yoth-special-edition</code> only</td>
-            <td class="wide">Plan scopes everything to this template.</td>
-            <td><span class="status status--match">Match</span></td>
-          </tr>
-          <tr style="--i:5">
-            <td class="wide">EOD tomorrow (Friday), Tuesday AM launch</td>
-            <td class="wide">Plan header says same.</td>
-            <td><span class="status status--match">Match</span></td>
-          </tr>
-          <tr style="--i:6">
-            <td class="wide">Update BIS button label and pop up text</td>
-            <td class="wide">Button text + modal description configurable via settings.</td>
-            <td><span class="status status--match">Match</span></td>
-          </tr>
-          <tr style="--i:7">
-            <td class="wide">Use Stoq's API to trigger events</td>
-            <td class="wide">Uses <code>openInlineForm</code>, <code>openModal</code>, <code>removeInlineForm</code>.</td>
-            <td><span class="status status--match">Match</span></td>
-          </tr>
-          <tr style="--i:8">
-            <td class="wide">Custom button + modal with text settings in buy buttons block</td>
-            <td class="wide">Schema settings in <code>buy_buttons</code> block.</td>
-            <td><span class="status status--match">Match</span></td>
-          </tr>
-          <tr style="--i:9">
-            <td class="wide">Default values = current behavior when empty</td>
-            <td class="wide">Blank settings = Stoq default "Notify Me" behavior.</td>
-            <td><span class="status status--match">Match</span></td>
-          </tr>
-          <tr style="--i:10">
-            <td class="wide">Only display for OOS variants</td>
-            <td class="wide">DOM-based sold-out detection.</td>
-            <td><span class="status status--match">Match</span></td>
-          </tr>
-          <tr style="--i:11">
-            <td class="wide">Exclude products with <code>excludebis</code> tag</td>
-            <td class="wide">Checked in both PDP and PLP Liquid.</td>
-            <td><span class="status status--match">Match</span></td>
-          </tr>
-          <tr style="--i:12">
-            <td class="wide"><code>openInlineForm</code> to load Stoq form in modal</td>
-            <td class="wide">PDP modal uses <code>openInlineForm</code>.</td>
-            <td><span class="status status--match">Match</span></td>
-          </tr>
-          <tr style="--i:13">
-            <td class="wide">Updated Button Label: "Join the waitlist"</td>
-            <td class="wide">Pre-populated in template JSON.</td>
-            <td><span class="status status--match">Match</span></td>
-          </tr>
-          <tr style="--i:14">
-            <td class="wide">Updated Pop Up Text: "Sign up to be notified when we restock this or other embroidered styles."</td>
-            <td class="wide"><code>bis_modal_description</code> setting.</td>
-            <td><span class="status status--match">Match</span></td>
-          </tr>
-          <tr style="--i:15">
-            <td class="wide">Theme: Huha 2.0 - Giddy Up Collection D2C Launch</td>
-            <td class="wide">Clone ID <code>145580556374</code>.</td>
-            <td><span class="status status--match">Match</span></td>
-          </tr>
-          <tr style="--i:16">
-            <td class="wide">Changes made locally</td>
-            <td class="wide">Local dev + theme push.</td>
-            <td><span class="status status--match">Match</span></td>
-          </tr>
-          <tr style="--i:17">
-            <td class="wide">Run <code>stoq:restock-modal:submitted</code> when form is submitted</td>
-            <td class="wide">Not mentioned in plan.
-              <small>When using <code>openInlineForm</code> inside a custom modal, unclear if Stoq fires this event automatically or if manual dispatch is needed.</small>
-            </td>
-            <td><span class="status status--gap">Gap</span></td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr>
-            <td>14 items reviewed</td>
-            <td></td>
-            <td>13 match &middot; 1 gap</td>
-          </tr>
-        </tfoot>
-      </table>
+  <div class="audit-layout">
+
+    <div class="table-wrap">
+      <div class="table-scroll" tabindex="0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="num">#</th>
+              <th class="wide">Request</th>
+              <th class="wide">Plan</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="num">1</td>
+              <td class="wide">Template: <code>yoth-special-edition</code> only</td>
+              <td class="wide">Plan scopes everything to this template.</td>
+              <td><span class="status status--match">Match</span></td>
+            </tr>
+            <tr>
+              <td class="num">2</td>
+              <td class="wide">EOD tomorrow (Friday), Tuesday AM launch</td>
+              <td class="wide">Plan header says same.</td>
+              <td><span class="status status--match">Match</span></td>
+            </tr>
+            <tr>
+              <td class="num">3</td>
+              <td class="wide">Update BIS button label and pop up text</td>
+              <td class="wide">Button text + modal description configurable via settings.</td>
+              <td><span class="status status--match">Match</span></td>
+            </tr>
+            <tr>
+              <td class="num">4</td>
+              <td class="wide">Use Stoq's API to trigger events</td>
+              <td class="wide">Uses <code>openInlineForm</code>, <code>openModal</code>, <code>removeInlineForm</code>.</td>
+              <td><span class="status status--match">Match</span></td>
+            </tr>
+            <tr>
+              <td class="num">5</td>
+              <td class="wide">Custom button + modal with text settings in buy buttons block</td>
+              <td class="wide">Schema settings in <code>buy_buttons</code> block.</td>
+              <td><span class="status status--match">Match</span></td>
+            </tr>
+            <tr>
+              <td class="num">6</td>
+              <td class="wide">Default values = current behavior when empty</td>
+              <td class="wide">Blank settings = Stoq default "Notify Me" behavior.</td>
+              <td><span class="status status--match">Match</span></td>
+            </tr>
+            <tr>
+              <td class="num">7</td>
+              <td class="wide">Only display for OOS variants</td>
+              <td class="wide">DOM-based sold-out detection.</td>
+              <td><span class="status status--match">Match</span></td>
+            </tr>
+            <tr>
+              <td class="num">8</td>
+              <td class="wide">Exclude products with <code>excludebis</code> tag</td>
+              <td class="wide">Checked in PDP Liquid only.
+                <small>PLP tiles still render the waitlist button for tagged products; the plan needs the same tag check in the collection grid snippet.</small>
+              </td>
+              <td><span class="status status--partial">Partial</span></td>
+            </tr>
+            <tr>
+              <td class="num">9</td>
+              <td class="wide"><code>openInlineForm</code> to load Stoq form in modal</td>
+              <td class="wide">PDP modal uses <code>openInlineForm</code>.</td>
+              <td><span class="status status--match">Match</span></td>
+            </tr>
+            <tr>
+              <td class="num">10</td>
+              <td class="wide">Updated Button Label: "Join the waitlist"</td>
+              <td class="wide">Pre-populated in template JSON.</td>
+              <td><span class="status status--match">Match</span></td>
+            </tr>
+            <tr>
+              <td class="num">11</td>
+              <td class="wide">Updated Pop Up Text: "Sign up to be notified when we restock this or other embroidered styles."</td>
+              <td class="wide"><code>bis_modal_description</code> setting.</td>
+              <td><span class="status status--match">Match</span></td>
+            </tr>
+            <tr>
+              <td class="num">12</td>
+              <td class="wide">Theme: Huha 2.0 - Giddy Up Collection D2C Launch</td>
+              <td class="wide">Clone ID <code>145580556374</code>.</td>
+              <td><span class="status status--match">Match</span></td>
+            </tr>
+            <tr>
+              <td class="num">13</td>
+              <td class="wide">Changes made locally</td>
+              <td class="wide">Local dev + theme push.</td>
+              <td><span class="status status--match">Match</span></td>
+            </tr>
+            <tr>
+              <td class="num">14</td>
+              <td class="wide">Run <code>stoq:restock-modal:submitted</code> when form is submitted</td>
+              <td class="wide">Not mentioned in plan.
+                <small>When using <code>openInlineForm</code> inside a custom modal, unclear if Stoq fires this event automatically or if manual dispatch is needed.</small>
+              </td>
+              <td><span class="status status--gap">Gap</span></td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2">14 items reviewed</td>
+              <td></td>
+              <td>12 match &middot; 1 partial &middot; 1 gap</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </div>
+
+    <aside class="rail" aria-label="Annotations">
+      <div class="rail-note">
+        <span class="rail-ref">rows 1–7</span>
+        Scope, timing, and settings requests map cleanly onto the plan; nothing here needs follow-up before Friday.
+      </div>
+      <div class="rail-note rail-note--mid">
+        <span class="rail-ref">row 8</span>
+        The tag exclusion is half-implemented. PDP is covered; the PLP grid check is a five-line Liquid change but must land before launch.
+      </div>
+      <div class="rail-note rail-note--end">
+        <span class="rail-ref">row 14</span>
+        The only true gap. See the analysis below for why the missing event could silently break downstream integrations.
+      </div>
+    </aside>
+
   </div>
 
-  <details class="collapsible animate" style="--i:19">
-    <summary>Gap Analysis Detail</summary>
+  <details class="collapsible">
+    <summary>Gap analysis detail</summary>
     <div class="collapsible__body">
       <strong>Gap: <code>stoq:restock-modal:submitted</code> event.</strong>
-      Michael explicitly requests firing this event on form submission. The plan uses Stoq's <code>openInlineForm</code> inside a custom modal, but doesn't address whether Stoq dispatches this event automatically in that context. If other integrations (Klaviyo, analytics, theme JS) listen for it, missing it could silently break the submission pipeline. Recommend adding an explicit <code>dispatchEvent</code> call as a safety net.
+      Victoria explicitly requests firing this event on form submission. The plan uses Stoq's <code>openInlineForm</code> inside a custom modal, but doesn't address whether Stoq dispatches this event automatically in that context. If other integrations (Klaviyo, analytics, theme JS) listen for it, missing it could silently break the submission pipeline. Recommend adding an explicit <code>dispatchEvent</code> call as a safety net.
     </div>
   </details>
 

@@ -3,8 +3,7 @@ description: Deploy a generated visual-explainer HTML page and return a live Ver
 ---
 # Share Visual Explainer Page
 
-Share a visual explainer HTML file via Vercel when a compatible local
-`vercel-deploy` setup is available.
+Share a visual explainer HTML file instantly via Vercel. Returns a live URL with no authentication required when a Pi-compatible `vercel-deploy` skill is installed.
 
 ## Usage
 
@@ -17,37 +16,34 @@ Share a visual explainer HTML file via Vercel when a compatible local
 
 **Examples:**
 ```
+/share-page ~/.agent/diagrams/my-diagram.html
 /share-page /tmp/visual-explainer-output.html
-/share-page /absolute/path/to/my-diagram.html
 ```
 
 ## How It Works
 
 1. Finds the `visual-explainer` skill directory for the current harness
 2. Copies your HTML file to a temp directory as `index.html`
-3. Deploys via a compatible local `vercel-deploy` script
+3. Deploys via the Pi-compatible `vercel-deploy` skill
 4. Returns a live URL immediately
 
 ## Requirements
 
-- **vercel-deploy script** - Required for deployment. It must be discoverable
-  from the current harness or supplied by environment variable.
+- **vercel-deploy skill** - Required for deployment. In Pi, install with: `pi install npm:vercel-deploy`
 
-Some deployment setups are claimable and need no account during preview, but do
-not assume that for every harness.
+No Vercel account, Cloudflare account, or API keys needed. The deployment is "claimable" — you can transfer it to your Vercel account later if you want.
 
 ## Script Location
 
 Resolve the script from the installed skill directory, then run it with the HTML file path:
 
 ```bash
-bash /absolute/path/to/visual-explainer/scripts/share.sh <file>
+bash ~/.pi/agent/skills/visual-explainer/scripts/share.sh <file>
 ```
 
-If the skill is installed somewhere else, use that install path instead.
+If the skill is installed somewhere else, use that install path instead. Common locations include `~/.codex/skills/visual-explainer/scripts/share.sh`, `~/.config/opencode/skill/visual-explainer/scripts/share.sh`, or `./plugins/visual-explainer/scripts/share.sh` from a repository checkout.
 
-Other harnesses can generate and open HTML normally, but sharing requires that a
-compatible deployment script is available.
+The script currently looks for the Pi-compatible `vercel-deploy` script in the standard Pi skill locations. Other harnesses can generate and open HTML normally, but sharing requires that dependency to be available in a compatible location.
 
 ## Output
 

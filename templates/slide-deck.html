@@ -11,7 +11,8 @@
   and rose (data-table) templates so agents absorb variety.
   Key patterns demonstrated:
   - All 10 slide types in a cohesive narrative
-  - SlideEngine JS: keyboard/touch/wheel nav, progress bar, dots, counter, hints
+  - SlideEngine JS: keyboard/touch/wheel nav, progress bar, dots, counter, hints,
+    #N deep links; boots independently of the Mermaid CDN
   - Cinematic transitions: fade + translateY + scale, staggered child reveals
   - Per-slide background variation (gradient direction, accent glow position)
   - Decorative SVG accents (corner marks, quote mark, divider)
@@ -20,17 +21,17 @@
   - Mermaid at presentation scale (18px labels, 2px edges, 8 nodes)
   - Dark-first with light mode via prefers-color-scheme
   - Responsive height breakpoints for projection and small viewports
-  - Nav chrome with backdrop blur for mixed-background visibility
-  - Event delegation: Mermaid zoom and table scroll don't trigger slide nav
+  - Diagrams: click-to-expand only (the pan/zoom engine is for scrollable pages)
+  - Event delegation: diagram clicks and table scroll don't trigger slide nav
   - prefers-reduced-motion respected
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   /* ============ THEME: Midnight Editorial ============ */
   :root {
-    --font-body: 'Instrument Serif', Georgia, serif;
+    --font-body: 'Spectral', Georgia, serif;
     --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
     --bg: #0f1729;
     --surface: #162040;
@@ -38,9 +39,16 @@
     --surface-elevated: #243362;
     --border: rgba(200, 180, 140, 0.08);
     --border-bright: rgba(200, 180, 140, 0.16);
+    --pattern: rgba(232, 228, 216, 0.04);
     --text: #e8e4d8;
-    --text-dim: #9a9484;
+    --text-bright: #f8f6ef;
+    --text-dim: #a49e8d;      /* lifted so it clears 4.5:1 on --surface-elevated too */
+    /* Gold is INK here. As a fill it is 2.2:1 under white — solid gold badges
+       take --bg as their ink (8:1), and anything needing light text on gold
+       uses --accent-fill. */
     --accent: #d4a73a;
+    --accent-fill: #6b5210;
+    --accent-on-fill: #fdf8e8;
     --accent-dim: rgba(212, 167, 58, 0.1);
     --code-bg: #0a0f1e;
     --code-text: #d4d0c4;
@@ -55,23 +63,27 @@
   @media (prefers-color-scheme: light) {
     :root {
       --bg: #faf8f2;
-      --surface: #ffffff;
+      --surface: #fffefa;
       --surface2: #f5f0e6;
       --surface-elevated: #fffdf5;
       --border: rgba(30, 30, 50, 0.08);
       --border-bright: rgba(30, 30, 50, 0.16);
+      --pattern: rgba(26, 24, 20, 0.045);
       --text: #1a1814;
-      --text-dim: #7a7468;
-      --accent: #b8860b;
-      --accent-dim: rgba(184, 134, 11, 0.08);
+      --text-bright: #0d0b08;
+      --text-dim: #6d675c;   /* 5.5:1 on --bg; #7a7468 was 4.4:1 */
+      --accent: #8a6508;     /* dark enough to pass 4.5:1 as text on white */
+      --accent-fill: #8a6508;
+      --accent-on-fill: #fdf8e8;
+      --accent-dim: rgba(138, 101, 8, 0.06);
       --code-bg: #2a2520;
       --code-text: #e8e4d8;
-      --green: #16a34a;
-      --green-dim: rgba(22, 163, 74, 0.08);
-      --red: #dc2626;
-      --red-dim: rgba(220, 38, 38, 0.08);
-      --blue: #2563eb;
-      --blue-dim: rgba(37, 99, 235, 0.08);
+      --green: #166534;
+      --green-dim: rgba(22, 101, 52, 0.08);
+      --red: #c81e1e;        /* clears 4.5:1 on its own tint, not just on white */
+      --red-dim: rgba(200, 30, 30, 0.08);
+      --blue: #1d4ed8;
+      --blue-dim: rgba(29, 78, 216, 0.08);
     }
   }
 
@@ -89,7 +101,6 @@
     height: 100dvh;
     overflow-y: auto;
     scroll-snap-type: y mandatory;
-    scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
   }
 
@@ -150,9 +161,8 @@
     position: fixed; right: clamp(12px, 2vw, 24px); top: 50%;
     transform: translateY(-50%); display: flex; flex-direction: column;
     gap: 8px; z-index: 100; padding: 8px;
-    background: color-mix(in srgb, var(--bg) 60%, transparent 40%);
+    background: color-mix(in srgb, var(--bg) 85%, transparent 15%);
     border-radius: 20px;
-    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
   }
 
   .deck-dot {
@@ -167,7 +177,6 @@
     position: fixed; bottom: clamp(12px, 2vh, 24px); right: clamp(12px, 2vw, 24px);
     font-family: var(--font-mono); font-size: 12px; color: var(--text-dim);
     z-index: 100; font-variant-numeric: tabular-nums;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   }
 
   .deck-hints {
@@ -175,9 +184,11 @@
     transform: translateX(-50%); font-family: var(--font-mono);
     font-size: 11px; color: var(--text-dim); opacity: 0.6; z-index: 100;
     transition: opacity 0.5s ease; white-space: nowrap;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   }
-  .deck-hints.faded { opacity: 0; pointer-events: none; }
+  /* Dim, don't remove — first-time viewers still need the hint later */
+  .deck-hints.faded { opacity: 0.25; }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   /* ============ SHARED SLIDE ELEMENTS ============ */
   .slide__display {
@@ -268,12 +279,23 @@
     padding: 0;
   }
 
+  /* Bullets are the substance of the slide — they take --text, not --text-dim.
+     Dimming them is the fastest way to make a deck unreadable at projection
+     distance. Hierarchy against the heading comes from size, not from fade. */
   .slide__bullets li {
     padding: 10px 0 10px 24px;
     position: relative;
     font-size: clamp(16px, 2vw, 22px);
     line-height: 1.5;
+    color: var(--text);
+  }
+
+  /* Trailing detail on a bullet — this is what --text-dim is for */
+  .slide__bullets li small {
+    display: block;
+    font-size: 0.75em;
     color: var(--text-dim);
+    margin-top: 2px;
   }
 
   .slide__bullets li::before {
@@ -356,16 +378,29 @@
     transition: background 0.15s, color 0.15s;
   }
   .zoom-controls button:hover { background: var(--border); color: var(--text); }
-  .mermaid-wrap { cursor: grab; }
-  .mermaid-wrap.is-panning { cursor: grabbing; user-select: none; }
+  /* Slides are fixed-viewport: no in-slide pan/zoom fork. Click opens full size.
+     The full transform-based pan/zoom engine (see mermaid.md) is for scrollable pages. */
+  .mermaid-wrap { cursor: zoom-in; }
 
   .mermaid .nodeLabel { color: var(--text) !important; }
   .mermaid .edgeLabel { color: var(--text-dim) !important; background-color: var(--bg) !important; }
   .mermaid .edgeLabel rect { fill: var(--bg) !important; }
+  /* Contain, don't stretch. width:100% + height:auto overflows a tall diagram
+     off the bottom of a fixed-height slide — the deck then opens showing the
+     top third of the graph. Capping BOTH axes keeps the whole thing on screen. */
   .slide--diagram .mermaid svg {
-    width: 100% !important;
+    width: auto !important;
     height: auto !important;
     max-width: 100% !important;
+    max-height: 100% !important;
+  }
+
+  .slide--diagram .mermaid {
+    max-width: 100%;
+    max-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .slide--diagram .mermaid .nodeLabel { font-size: 18px !important; }
@@ -480,7 +515,10 @@
     font-family: var(--font-mono);
     font-size: 11px; font-weight: 600;
     padding: 4px 12px; border-radius: 4px;
-    background: var(--accent); color: var(--bg);
+    /* The fill/on-fill pair, not background:var(--accent);color:var(--bg).
+       That shortcut works on the dark theme (gold on navy) and drops to ~3:1
+       on the light one, where --bg is cream and --accent is a mid gold. */
+    background: var(--accent-fill); color: var(--accent-on-fill);
   }
 
   .slide__code-block pre { margin: 0; overflow-x: auto; }
@@ -538,26 +576,34 @@
   .slide__bg {
     position: absolute; inset: 0;
     background-size: cover; background-position: center;
+    /* Dark fallback so white bleed-slide text stays readable if an image fails to load */
+    background-color: #0f1729;
     z-index: 0;
   }
 
   .slide__bg--gradient {
-    background: linear-gradient(135deg, #1a0f3c 0%, #0f1729 40%, #162040 100%);
+    background: linear-gradient(135deg, #0a1122 0%, #0f1729 40%, #1a2648 100%);
   }
 
+  /* Mandatory on every bleed slide — it is the only thing guaranteeing
+     contrast over a backdrop whose brightness isn't known at author time.
+     Strongest at the bottom, where the text sits. */
   .slide__scrim {
     position: absolute; inset: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 40%, transparent 100%);
+    background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.45) 35%, rgba(0,0,0,0.1) 70%, transparent 100%);
     z-index: 1;
   }
 
   .slide--bleed .slide__content {
     position: relative; z-index: 2;
     padding: clamp(40px, 6vh, 80px) clamp(40px, 8vw, 120px);
-    color: #ffffff;
+    color: #f7f8fa;
   }
-  .slide--bleed .slide__heading { color: #ffffff; }
-  .slide--bleed .slide__subtitle { color: rgba(255,255,255,0.7); }
+  .slide--bleed .slide__heading { color: #f7f8fa; }
+  /* 0.72 over a 0.78 scrim still clears 4.5:1 — don't drop below 0.65,
+     and never use --text-dim here (it's tuned for --bg, not for a photo). */
+  .slide--bleed .slide__subtitle,
+  .slide--bleed .slide__label { color: rgba(247,248,250,0.72); }
 
   /* ============ RESPONSIVE ============ */
   @media (max-height: 700px) {
@@ -628,7 +674,7 @@
           <li class="reveal">All traffic routes through one Node.js process</li>
           <li class="reveal">Rate limiting is per-instance, not distributed</li>
           <li class="reveal">Auth validation adds 40ms per request</li>
-          <li class="reveal">No circuit breaking &mdash; cascade failures hit everything</li>
+          <li class="reveal">No circuit breaking: cascade failures hit everything</li>
         </ul>
       </div>
       <div class="slide__aside reveal">
@@ -682,10 +728,7 @@
     <h2 class="slide__heading reveal">Request Flow</h2>
     <div class="mermaid-wrap reveal">
       <div class="zoom-controls">
-        <button onclick="zoomDiagram(this,1.2)" title="Zoom in">+</button>
-        <button onclick="zoomDiagram(this,0.8)" title="Zoom out">&minus;</button>
-        <button onclick="resetZoom(this)" title="Reset">&#8634;</button>
-        <button onclick="openDiagramFullscreen(this)" title="Open full size in new tab">&#x26F6;</button>
+        <button onclick="openDiagramFullscreen(this)" title="Open full size in new tab" aria-label="Open full size in new tab">&#x26F6;</button>
       </div>
       <pre class="mermaid">
 graph LR
@@ -711,28 +754,16 @@ graph LR
   <!-- SLIDE 7: DASHBOARD -->
   <section class="slide slide--dashboard" style="background-image:radial-gradient(ellipse at 70% 30%, var(--accent-dim) 0%, transparent 40%);">
     <h2 class="slide__heading reveal">Performance Impact</h2>
-    <div class="slide__kpis">
-      <div class="slide__kpi reveal">
-        <div class="slide__kpi-val" style="color:var(--accent);">12ms</div>
-        <div class="slide__kpi-label">P99 Latency</div>
-        <div class="slide__kpi-trend" style="color:var(--green);">&darr; from 142ms</div>
-      </div>
-      <div class="slide__kpi reveal">
-        <div class="slide__kpi-val" style="color:var(--green);">99.97%</div>
-        <div class="slide__kpi-label">Uptime</div>
-        <div class="slide__kpi-trend" style="color:var(--green);">&uarr; from 99.2%</div>
-      </div>
-      <div class="slide__kpi reveal">
-        <div class="slide__kpi-val" style="color:var(--blue);">340</div>
-        <div class="slide__kpi-label">Edge Locations</div>
-        <div class="slide__kpi-trend" style="color:var(--text-dim);">global coverage</div>
-      </div>
-      <div class="slide__kpi reveal">
-        <div class="slide__kpi-val" style="color:var(--accent);">$0.02</div>
-        <div class="slide__kpi-label">Per 10K Requests</div>
-        <div class="slide__kpi-trend" style="color:var(--green);">&darr; 68% cost reduction</div>
-      </div>
+    <!-- One dominant figure, supporting metrics inline in prose — not a uniform KPI card grid -->
+    <div class="reveal" style="margin-top:clamp(20px,5vh,56px);">
+      <div class="slide__kpi-val" style="color:var(--accent); font-size:clamp(80px,15vw,180px); line-height:0.95;">12ms</div>
+      <div class="slide__kpi-label" style="margin-top:8px;">P99 latency, down from 142ms</div>
     </div>
+    <p class="slide__subtitle reveal" style="margin-top:clamp(24px,5vh,48px); max-width:56ch;">
+      Uptime rose from 99.2% to <strong style="color:var(--green);">99.97%</strong> across
+      <strong>340</strong> edge locations, at <strong style="color:var(--accent);">$0.02</strong>
+      per 10K requests: a 68% cost reduction.
+    </p>
   </section>
 
   <!-- SLIDE 8: TABLE -->
@@ -787,19 +818,41 @@ graph LR
     <div class="slide__bg slide__bg--gradient"></div>
     <div class="slide__scrim"></div>
     <div class="slide__content">
-      <p class="slide__label reveal" style="color:rgba(255,255,255,0.6);">Next Steps</p>
+      <!-- No inline color overrides: the .slide--bleed rules already set the
+           ink at a tested alpha. Inline 0.6-alpha white is how bleed slides
+           quietly drop under 4.5:1. -->
+      <p class="slide__label reveal">Next Steps</p>
       <h2 class="slide__heading reveal">Ship Shadow Mode This Week</h2>
-      <p class="slide__subtitle reveal" style="color:rgba(255,255,255,0.6); margin-top:12px;">Full cutover targeted for end of Q1</p>
+      <p class="slide__subtitle reveal" style="margin-top:12px;">Full cutover targeted for end of Q1</p>
     </div>
   </section>
 
 </div><!-- /deck -->
 
 <script type="module">
-  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  // Deck chrome (SlideEngine) boots independently in the classic script below —
+  // a CDN failure here must never take navigation down with it.
+  let mermaid = null;
+  try {
+    mermaid = (await import('https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.esm.min.mjs')).default;
+  } catch (err) {
+    window.__mermaidFailed(err);
+  }
 
   const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  mermaid.initialize({
+
+  // classDef colors in the diagram source are authored for dark mode;
+  // remap them for light so fills/strokes keep contrast on cream
+  if (!isDark) {
+    document.querySelectorAll('.mermaid').forEach((el) => {
+      el.textContent = el.textContent
+        .replaceAll('#d4a73a', '#8a6508')
+        .replaceAll('#60a5fa', '#2563eb')
+        .replaceAll('#4ade80', '#166534');
+    });
+  }
+
+  if (mermaid) mermaid.initialize({
     startOnLoad: true,
     theme: 'base',
     look: 'classic',
@@ -815,7 +868,8 @@ graph LR
       tertiaryTextColor: isDark ? '#e8e4d8' : '#1a1814',
       lineColor: isDark ? '#9a9484' : '#7a7468',
       fontSize: '18px',
-      fontFamily: 'var(--font-body)',
+      // Literal stack, not var() — CSS variables don't survive into exported/cloned SVG
+      fontFamily: 'Spectral, Georgia, serif',
       noteBkgColor: isDark ? '#1d2b52' : '#fef3e0',
       noteTextColor: isDark ? '#e8e4d8' : '#1a1814',
       noteBorderColor: isDark ? '#d4a73a' : '#b8860b',
@@ -823,12 +877,20 @@ graph LR
   });
 
   function autoFit() {
+    // Contain the SVG in BOTH axes. Mermaid emits fixed width/height plus an
+    // inline max-width; stripping those and capping to the container makes the
+    // diagram scale down to fit instead of overflowing the slide vertically.
     document.querySelectorAll('.mermaid svg').forEach(function(svg) {
+      svg.removeAttribute('width');
       svg.removeAttribute('height');
-      svg.style.width = '100%';
-      svg.style.maxWidth = '100%';
+      svg.style.width = 'auto';
       svg.style.height = 'auto';
-      svg.parentElement.style.width = '100%';
+      svg.style.maxWidth = '100%';
+      svg.style.maxHeight = '100%';
+      if (svg.parentElement) {
+        svg.parentElement.style.maxWidth = '100%';
+        svg.parentElement.style.maxHeight = '100%';
+      }
     });
     document.querySelectorAll('.slide__kpi-val').forEach(function(el) {
       if (el.scrollWidth > el.clientWidth) {
@@ -847,20 +909,31 @@ graph LR
     });
   }
 
-  mermaid.run().then(function() {
-    autoFit();
-    new SlideEngine();
-  });
+  if (mermaid) mermaid.run().then(autoFit).catch(window.__mermaidFailed);
 </script>
 
 <script>
-  // Mermaid zoom controls + click-to-expand
-  var INITIAL_ZOOM=1;
-  function zoomDiagram(b,f){var w=b.closest('.mermaid-wrap');var t=w.querySelector('.mermaid');var c=parseFloat(t.dataset.zoom||INITIAL_ZOOM);var n=Math.min(Math.max(c*f,0.5),5);t.dataset.zoom=n;t.style.zoom=n;}
-  function resetZoom(b){var w=b.closest('.mermaid-wrap');var t=w.querySelector('.mermaid');t.dataset.zoom=INITIAL_ZOOM;t.style.zoom=INITIAL_ZOOM;}
+  // Boot deck chrome unconditionally — never gated on the Mermaid CDN
+  document.addEventListener('DOMContentLoaded', function(){ new SlideEngine(); });
+
+  // Fallback when Mermaid can't load or render: show the diagram source, styled
+  window.__mermaidFailed = function(err){
+    document.querySelectorAll('.mermaid').forEach(function(el){
+      if (el.querySelector('svg')) return;
+      var pre = document.createElement('pre');
+      pre.textContent = (el.textContent || '').trim();
+      pre.style.cssText = 'font-family:var(--font-mono);font-size:13px;line-height:1.7;color:var(--text-dim);background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:20px;overflow:auto;white-space:pre-wrap;text-align:left;';
+      el.replaceWith(pre);
+    });
+    console.warn('Mermaid unavailable; showing diagram source instead.', err);
+  };
+
+  // Diagrams on slides: click (or the ⛶ button) opens full size in a new tab.
+  // In-slide pan/zoom is deliberately absent — slides are fixed-viewport, and the
+  // single pan/zoom engine lives in the scrollable-page pattern (mermaid.md).
   function openDiagramFullscreen(b){openMermaidInNewTab(b.closest('.mermaid-wrap'));}
   function openMermaidInNewTab(w){var svg=w.querySelector('.mermaid svg');if(!svg)return;var clone=svg.cloneNode(true);clone.style.zoom='';clone.style.transform='';var styles=getComputedStyle(document.documentElement);var bg=styles.getPropertyValue('--bg').trim()||'#ffffff';var html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Diagram</title><style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:'+bg+';padding:40px;box-sizing:border-box}svg{max-width:100%;max-height:90vh;height:auto}</style></head><body>'+clone.outerHTML+'</body></html>';window.open(URL.createObjectURL(new Blob([html],{type:'text/html'})),'_blank');}
-  document.querySelectorAll('.mermaid-wrap').forEach(function(w){w.addEventListener('wheel',function(e){if(!e.ctrlKey&&!e.metaKey)return;e.preventDefault();var t=w.querySelector('.mermaid');var c=parseFloat(t.dataset.zoom||INITIAL_ZOOM);var f=e.deltaY<0?1.1:0.9;var n=Math.min(Math.max(c*f,0.5),5);t.dataset.zoom=n;t.style.zoom=n;},{passive:false});var sX,sY,sL,sT,sTime,didPan;w.addEventListener('mousedown',function(e){if(e.target.closest('.zoom-controls'))return;w.classList.add('is-panning');sX=e.clientX;sY=e.clientY;sL=w.scrollLeft;sT=w.scrollTop;sTime=Date.now();didPan=false;});window.addEventListener('mousemove',function(e){if(!w.classList.contains('is-panning'))return;var dx=e.clientX-sX,dy=e.clientY-sY;if(Math.abs(dx)>5||Math.abs(dy)>5)didPan=true;w.scrollLeft=sL-dx;w.scrollTop=sT-dy;});window.addEventListener('mouseup',function(){if(!w.classList.contains('is-panning'))return;w.classList.remove('is-panning');if(!didPan&&Date.now()-sTime<300)openMermaidInNewTab(w);});});
+  document.querySelectorAll('.mermaid-wrap').forEach(function(w){w.addEventListener('click',function(e){if(e.target.closest('.zoom-controls'))return;openMermaidInNewTab(w);});});
 
   // SlideEngine
   function SlideEngine(){
@@ -872,6 +945,9 @@ graph LR
     this.bindEvents();
     this.observe();
     this.update();
+    // Deep link: #5 opens on slide 5
+    var h=parseInt((location.hash||'').slice(1),10);
+    if(h>=2&&h<=this.total){this.current=h-1;this.slides[h-1].scrollIntoView();}
   }
   SlideEngine.prototype.buildChrome=function(){
     var bar=document.createElement('div');bar.className='deck-progress';document.body.appendChild(bar);this.bar=bar;
@@ -908,6 +984,8 @@ graph LR
     this.bar.style.width=((this.current+1)/this.total*100)+'%';
     var c=this.current;this.dots.forEach(function(d,i){d.classList.toggle('active',i===c);});
     this.counter.textContent=(this.current+1)+' / '+this.total;
+    // Keep the URL shareable at the current slide
+    try{history.replaceState(null,'','#'+(this.current+1));}catch(e){}
   };
   SlideEngine.prototype.fadeHints=function(){clearTimeout(this.hintTimer);this.hints.classList.add('faded');};
 </script>

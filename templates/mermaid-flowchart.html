@@ -33,13 +33,19 @@
     --bg: #f0fdfa;
     --surface: #ffffff;
     --border: rgba(0, 0, 0, 0.07);
+    --pattern: rgba(19, 78, 74, 0.045);
     --text: #134e4a;
-    --text-dim: #5f8a85;
+    --text-bright: #0a302d;
+    --text-dim: #4a716c;        /* 5.1:1 on --bg; #5f8a85 was 3.7:1 */
 
-    --primary: #0d9488;
-    --primary-dim: rgba(13, 148, 136, 0.08);
+    /* Ink tones — these read as text and as node borders. The fill pair below
+       is what goes UNDER text; --primary itself is never a fill for light ink. */
+    --primary: #0b7d73;         /* 5.0:1 on --surface; #0d9488 was 3.7:1 */
+    --primary-dim: rgba(11, 125, 115, 0.04);
+    --primary-fill: #0b7d73;
+    --primary-on-fill: #f0fdfa;
     --secondary: #0369a1;
-    --tertiary: #d97706;
+    --tertiary: #b45309;        /* #d97706 is 3.1:1 as small text on white */
     --danger: #dc2626;
   }
 
@@ -48,11 +54,18 @@
       --bg: #042f2e;
       --surface: #0a3d3a;
       --border: rgba(255, 255, 255, 0.08);
+      --pattern: rgba(204, 251, 241, 0.04);
       --text: #ccfbf1;
-      --text-dim: #5eead4;
+      --text-bright: #eafffa;
+      /* Low-chroma so dim text recedes; saturated teal is reserved for --primary */
+      --text-dim: #8fbab4;
 
+      /* Bright ink on deep teal. As a fill it would be 1.9:1 under white —
+         so the fill is the deep tone, and bright-fill badges take --bg as ink. */
       --primary: #2dd4bf;
       --primary-dim: rgba(45, 212, 191, 0.14);
+      --primary-fill: #0b5f57;
+      --primary-on-fill: #eafffa;
       --secondary: #38bdf8;
       --tertiary: #fbbf24;
       --danger: #f87171;
@@ -64,7 +77,10 @@
 
   body {
     background-color: var(--bg);
-    background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+    /* --pattern, not --border: border alpha is tuned for a crisp 1px edge and
+       reads as a hard dot field when repeated across the page. Content sits on
+       opaque .mermaid-wrap surfaces, so the texture never runs under text. */
+    background-image: radial-gradient(circle, var(--pattern) 1px, transparent 1px);
     background-size: 24px 24px;
     color: var(--text);
     font-family: var(--font-body);
@@ -103,6 +119,7 @@
     letter-spacing: -1px;
     margin-bottom: 6px;
     text-wrap: balance;
+    color: var(--text-bright);
   }
 
   .subtitle {
@@ -218,11 +235,13 @@
 
   .zoom-label {
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: 11px;
     color: var(--text-dim);
     padding: 0 6px;
     white-space: nowrap;
   }
+
+  :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
   /* ============ MERMAID SVG OVERRIDES ============ */
   .mermaid .nodeLabel {
@@ -269,10 +288,9 @@
 
   /* ============ CALLOUT ============ */
   .callout {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--primary);
-    border-radius: 0 10px 10px 0;
+    background: color-mix(in srgb, var(--primary) 6%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+    border-radius: 10px;
     padding: 16px 20px;
     font-size: 13px;
     line-height: 1.6;
@@ -314,16 +332,16 @@
 
   <section class="diagram-shell animate" style="--i:3">
     <p class="diagram-shell__hint">
-      Ctrl/Cmd + wheel to zoom. Scroll to pan. Drag to pan when zoomed. Double-click to fit.
+      Ctrl/Cmd + wheel to zoom. Drag to pan when zoomed. Double-click to fit.
     </p>
     <div class="mermaid-wrap">
       <div class="zoom-controls">
-        <button type="button" data-action="zoom-in" title="Zoom in">+</button>
-        <button type="button" data-action="zoom-out" title="Zoom out">&minus;</button>
-        <button type="button" data-action="zoom-fit" title="Smart fit">&#8634;</button>
-        <button type="button" data-action="zoom-one" title="1:1 zoom">1:1</button>
-        <button type="button" data-action="zoom-expand" title="Open full size">&#x26F6;</button>
-        <button type="button" data-action="export-webp" title="Export WebP">WebP</button>
+        <button type="button" data-action="zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
+        <button type="button" data-action="zoom-out" title="Zoom out" aria-label="Zoom out">&minus;</button>
+        <button type="button" data-action="zoom-fit" title="Smart fit" aria-label="Smart fit">&#8634;</button>
+        <button type="button" data-action="zoom-one" title="1:1 zoom" aria-label="Actual size">1:1</button>
+        <button type="button" data-action="zoom-expand" title="Open full size" aria-label="Open full size in new tab">&#x26F6;</button>
+        <button type="button" data-action="export-webp" title="Export WebP" aria-label="Export as WebP image">WebP</button>
         <span class="zoom-label">Loading...</span>
       </div>
       <div class="mermaid-viewport">
@@ -368,18 +386,23 @@
 </div>
 
 <script type="module">
-  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-  import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk/dist/mermaid-layout-elk.esm.min.mjs';
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.esm.min.mjs';
+  import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.7/dist/mermaid-layout-elk.esm.min.mjs';
 
   const config = {
     fitPadding: 28,
     minHeight: 360,
     maxHeightPx: 960,
     maxHeightVh: 0.84,
-    maxInitialZoom: 1.8,
+    /* Ceiling on INITIAL zoom only. The diagram always opens fully visible;
+       this just stops a small one from being blown up to fill the frame.
+       Manual zoom still goes to maxZoom. */
+    maxInitialZoom: 1.15,
     minZoom: 0.08,
     maxZoom: 6.5,
     zoomStep: 0.14,
+    /* Below this contain-scale, grow the container rather than accept a
+       thumbnail. Never used to justify cropping the diagram. */
     readabilityFloor: 0.58
   };
 
@@ -419,7 +442,9 @@
       tertiaryColor: isDark ? '#2e2618' : '#fffbeb',
       tertiaryBorderColor: isDark ? '#fbbf24' : '#d97706',
       tertiaryTextColor: isDark ? '#ccfbf1' : '#134e4a',
-      lineColor: isDark ? '#5eead4' : '#5f8a85',
+      // Edges carry meaning, so they need the 3:1 non-text floor against the
+      // container surface — not the "barely visible" treatment given to borders.
+      lineColor: isDark ? '#5eead4' : '#4a716c',
       noteBkgColor: isDark ? '#115e59' : '#fefce8',
       noteTextColor: isDark ? '#ccfbf1' : '#134e4a',
       noteBorderColor: isDark ? '#fbbf24' : '#d97706',
@@ -487,27 +512,23 @@
           || rH + config.fitPadding * 2 > viewport.clientHeight;
     }
 
+    /* The whole diagram must be visible on load. Earlier versions overrode the
+       contain-fit with a width- or height-priority zoom whenever the diagram
+       was large, which cropped it and made the page open mid-diagram — the
+       user then had to zoom out before they could read anything.
+
+       Legibility for large diagrams is bought by giving the container more
+       height (setAdaptiveHeight) and by simplifying the diagram, never by
+       cropping it. Zoom controls remain for inspecting detail. */
     function computeSmartFit() {
-      const vpW = viewport.clientWidth;
-      const vpH = viewport.clientHeight;
-      const aW = Math.max(80, vpW - config.fitPadding * 2);
-      const aH = Math.max(80, vpH - config.fitPadding * 2);
+      const aW = Math.max(80, viewport.clientWidth - config.fitPadding * 2);
+      const aH = Math.max(80, viewport.clientHeight - config.fitPadding * 2);
       const contain = Math.min(aW / svgW, aH / svgH);
 
-      let z = contain;
-      let mode = 'contain';
-      if (contain < config.readabilityFloor) {
-        const chartR = svgH / svgW;
-        const vpR = vpH / Math.max(vpW, 1);
-        if (chartR >= vpR) {
-          z = aW / svgW;
-          mode = 'width-priority';
-        } else {
-          z = aH / svgH;
-          mode = 'height-priority';
-        }
-      }
-      return { zoom: clamp(z, config.minZoom, config.maxInitialZoom), mode };
+      // Only ever scale DOWN to fit; scale up just enough that a small diagram
+      // doesn't float in dead space, never so far that it looks blown up.
+      const z = clamp(contain, config.minZoom, config.maxInitialZoom);
+      return { zoom: z, mode: z < contain - 0.001 ? 'capped' : 'fit' };
     }
 
     function fitDiagram() {
@@ -565,13 +586,42 @@
       return { w, h };
     }
 
+    /* Size the container to the diagram's own aspect ratio, so the contain-fit
+       above lands near 1:1 and nothing has to be cropped or shrunk hard.
+       A tall diagram gets a tall container (up to the viewport cap) rather
+       than being squeezed into a short one and rendered unreadably small. */
     function setAdaptiveHeight() {
       if (!svgW) return;
       const usableW = Math.max(280, wrap.getBoundingClientRect().width - 2);
       const idealH = (svgH / svgW) * usableW + config.fitPadding * 2;
       const maxVp = Math.floor(innerHeight * config.maxHeightVh);
       const hardMax = Math.min(config.maxHeightPx, Math.max(config.minHeight + 40, maxVp));
-      wrap.style.height = Math.round(clamp(idealH, config.minHeight, hardMax)) + 'px';
+
+      let h = clamp(idealH, config.minHeight, hardMax);
+
+      /* If fitting the whole diagram into that height would push it below the
+         readability floor, grow toward hardMax to claw back scale. This is the
+         legibility lever — the diagram still fits, it just gets more room. */
+      const containAt = (height) => Math.min(
+        (usableW - config.fitPadding * 2) / svgW,
+        (height - config.fitPadding * 2) / svgH
+      );
+      if (containAt(h) < config.readabilityFloor && h < hardMax) {
+        h = hardMax;
+      }
+
+      wrap.style.height = Math.round(h) + 'px';
+
+      /* Still too small to read even at full height? That's a diagram-complexity
+         problem, not a zoom problem — say so instead of silently shipping a
+         thumbnail. Author-facing only; harmless in the console for readers. */
+      if (containAt(h) < config.readabilityFloor * 0.6) {
+        console.info(
+          '[visual-explainer] Diagram renders at ' + Math.round(containAt(h) * 100) +
+          '% to fit its container. Consider splitting it — see the hybrid ' +
+          'pattern (Mermaid overview + CSS cards) in the skill\'s mermaid.md.'
+        );
+      }
     }
 
     function prepareSvgClone(extraPadding = 140) {
@@ -704,6 +754,11 @@
       } catch (err) {
         console.error('Mermaid render failed:', err);
         label.textContent = 'Error: ' + (err.message || 'Render failed');
+        // Degradation tier: the diagram source is still the content — show it.
+        const pre = document.createElement('pre');
+        pre.textContent = source.textContent.trim();
+        pre.style.cssText = 'margin:0;padding:16px;font-size:13px;line-height:1.6;overflow:auto;white-space:pre-wrap;color:var(--text-dim,inherit)';
+        canvas.replaceChildren(pre);
       }
     }
 
@@ -722,19 +777,13 @@
 
     viewport.addEventListener('dblclick', fitDiagram);
 
+    // Plain wheel always scrolls the page (never trapped); Ctrl/Cmd+wheel zooms, drag pans
     viewport.addEventListener('wheel', (e) => {
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
         const rect = viewport.getBoundingClientRect();
         const factor = e.deltaY < 0 ? 1 + config.zoomStep : 1 / (1 + config.zoomStep);
         zoomAround(factor, e.clientX - rect.left, e.clientY - rect.top);
-        return;
-      }
-      if (canPan()) {
-        e.preventDefault();
-        panX -= e.deltaX;
-        panY -= e.deltaY;
-        applyTransform();
       }
     }, { passive: false });
 

@@ -43,9 +43,9 @@ Verify each claim against the code and the plan. If something cannot be verified
 
 2. **Impact dashboard** — files to modify, files to create, files to delete, estimated lines added/removed, new test files planned, dependencies affected. Include a **completeness** indicator: whether the plan covers tests (green/red), docs updates (green/yellow/red), and migration/rollback (green/grey for N/A).
 
-3. **Current architecture** — Mermaid diagram of how the affected subsystem works *today*. Focus only on the parts the plan touches — don't diagram the entire codebase. Show the data flow, dependencies, and call paths that will change. Wrap in `.mermaid-wrap` with zoom controls (+/−/reset/expand buttons), Ctrl/Cmd+scroll zoom, click-and-drag panning, and click-to-expand (opens diagram full-size in new tab). See css-patterns.md "Mermaid Zoom Controls" for the full pattern including the `openMermaidInNewTab()` function. *Visual treatment: use matching Mermaid layout direction and node names as section 4 so the visual diff is obvious.*
+3. **Current architecture** — Mermaid diagram of how the affected subsystem works *today*. Focus only on the parts the plan touches — don't diagram the entire codebase. Show the data flow, dependencies, and call paths that will change. Use the full `diagram-shell` zoom/pan/export pattern — copy it from `../templates/mermaid-flowchart.html` per `../references/mermaid.md`. *Visual treatment: use matching Mermaid layout direction and node names as section 4 so the visual diff is obvious.*
 
-4. **Planned architecture** — Mermaid diagram of how the subsystem will work *after* the plan is implemented. Use the same node names and layout direction as the current architecture diagram so the differences are visually obvious. Same zoom controls and click-to-expand as section 3. *Highlight new nodes with a glow or accent border, removed nodes with strikethrough or reduced opacity, changed edges with a different stroke color.*
+4. **Planned architecture** — Mermaid diagram of how the subsystem will work *after* the plan is implemented. Use the same node names and layout direction as the current architecture diagram so the differences are visually obvious. Same zoom controls and click-to-expand as section 3. *Highlight new nodes with an accent-tinted fill and stronger border, removed nodes with strikethrough or reduced opacity, changed edges with a different stroke color.*
 
 5. **Change-by-change breakdown** — for each change in the plan, a side-by-side panel. Overflow prevention: apply `min-width: 0` on all grid/flex children and `overflow-wrap: break-word` on panels. Never use `display: flex` on `<li>` for marker characters — use absolute positioning instead (see css-patterns.md Overflow Protection).
    - **Left (current):** what the code does now, with relevant snippets or function signatures
@@ -68,7 +68,7 @@ Verify each claim against the code and the plan. If something cannot be verified
    - **Bad**: Gaps in the plan — missing files, unaddressed edge cases, incorrect assumptions about current code
    - **Ugly**: Subtle concerns — complexity being introduced, maintenance burden, things that will work initially but cause problems at scale
    - **Questions**: Ambiguities that need the plan author's clarification before implementation begins
-   - Use styled cards with green/red/amber/blue left-border accents. Each item should reference specific plan sections and code files. If nothing to flag in a category, say "None found" rather than omitting the section.
+   - Use styled cards with full 1px tinted borders and faint background washes (green/red/amber/blue) — never left-border accent stripes (see SKILL.md Anti-Patterns). Each item should reference specific plan sections and code files. If nothing to flag in a category, say "None found" rather than omitting the section.
 9. **Understanding gaps** — a closing dashboard that rolls up decision-rationale gaps from section 5 and cognitive complexity flags from section 7:
    - Count of changes with clear rationale vs. missing rationale (visual bar chart or progress indicator)
    - List of cognitive complexity flags with severity
@@ -79,7 +79,7 @@ Verify each claim against the code and the plan. If something cannot be verified
 
 **Optional illustrations** — if `surf` CLI is available (`which surf`), consider generating a conceptual illustration of the planned system via `surf gemini --generate-image` when it would help the reader visualize the change. Embed as base64 data URI. See css-patterns.md "Generated Images" for container styles. Skip if surf isn't available or the plan is purely structural.
 
-Include responsive section navigation. Use a current-vs-planned visual language throughout: blue/neutral for current state, green/purple for planned additions, amber for areas of concern, red for gaps or risks. Write to the user-requested or harness-provided output directory and open in browser.
+Include responsive section navigation. Use a current-vs-planned visual language throughout: blue/neutral for current state, green/purple for planned additions, amber for areas of concern, red for gaps or risks. Write to `~/.agent/diagrams/` and open in browser.
 
 Ultrathink.
 

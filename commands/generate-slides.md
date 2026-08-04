@@ -3,7 +3,7 @@ description: Generate a stunning magazine-quality slide deck as a self-contained
 ---
 Load the visual-explainer skill, then generate a slide deck for: $@
 
-Follow the visual-explainer skill workflow. Read the reference template at `./templates/slide-deck.html` and slide patterns at `./references/slide-patterns.md` before generating. Also read `./references/css-patterns.md` for shared patterns (Mermaid zoom controls, depth tiers, overflow protection) and `./references/libraries.md` for Mermaid theming, Chart.js, and font pairings.
+Follow the visual-explainer skill workflow. Read the reference template at `./templates/slide-deck.html` and slide patterns at `./references/slide-patterns.md` before generating. Also read `./references/css-patterns.md` for shared patterns (depth tiers, overflow protection), `./references/mermaid.md` for Mermaid theming and containers, and `./references/libraries.md` for Chart.js and font pairings.
 
 **Slide output is always opt-in.** Only generate slides when this command is invoked or the user explicitly asks for a slide deck.
 
@@ -15,5 +15,4 @@ Follow the visual-explainer skill workflow. Read the reference template at `./te
 
 **Compositional variety:** Consecutive slides must vary their spatial approach. Alternate between centered, left-heavy, right-heavy, split, edge-aligned, and full-bleed. Three centered slides in a row means push one off-axis.
 
-Write to the user-requested or harness-provided output directory and open the
-result in the browser.
+Write to `~/.agent/diagrams/` and open the result in the browser.

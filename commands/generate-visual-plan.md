@@ -5,7 +5,7 @@ Load the visual-explainer skill, then generate a comprehensive visual implementa
 
 Follow the visual-explainer skill workflow. Read the reference template, CSS patterns, and mermaid theming references before generating. Use an editorial or blueprint aesthetic, but vary fonts and palette from previous diagrams.
 
-**Data gathering phase** — understand the context before designing:
+**Data gathering phase** — understand the context before designing. Steps 2–3 and the state/API design steps apply to code features; for a non-code plan, gather from whatever the plan's real substrate is (documents, timelines, prior decisions) instead:
 
 1. **Parse the feature request.** Extract:
    - The core problem being solved
@@ -48,7 +48,7 @@ Follow the visual-explainer skill workflow. Read the reference template, CSS pat
 - Every assumption about the codebase that the plan relies on
 Verify each against the code. If something cannot be verified, mark it as uncertain. This fact sheet is your source of truth during HTML generation.
 
-**Diagram structure** — the page should include:
+**Diagram structure** — include a section only when the plan has real content for it; the sections below assume a code feature. A non-code plan (migration sequence, research plan, roadmap, process change) keeps the header / problem / breakdown / risks spine — header, The Problem, a change-by-change or phase-by-phase breakdown in place of the code-shaped sections, Edge Cases reframed as risks, and Implementation Notes — and drops state machines, state variables, functions, API tables, and test requirements entirely. An empty section rendered anyway is template filler.
 
 1. **Header** — feature name, one-line description, scope summary. *Visual treatment: use a distinctive header with monospace label ("Feature Plan", "Implementation Spec", etc.), large italic title, and muted subtitle. Set the tone for the page.*
 
@@ -76,7 +76,7 @@ Verify each against the code. If something cannot be verified, mark it as uncert
     - Backward compatibility considerations (gold border)
     - Critical implementation warnings (rose border)
     - Performance considerations if relevant (amber border)
-    *Visual treatment: callout boxes with colored left borders, strong labels.*
+    *Visual treatment: callout boxes with full tinted borders and background washes (see css-patterns.md Callout Boxes), strong labels.*
 
 **Visual hierarchy:**
 - Sections 1-3 should dominate the viewport on load (hero depth for header, elevated for problem comparison and state machine)
@@ -102,8 +102,6 @@ Verify each against the code. If something cannot be verified, mark it as uncert
 - Never use `display: flex` on `<li>` for markers — use absolute positioning
 - Test tables with wide content don't overflow their container
 
-Write to the user-requested or harness-provided output directory with a
-descriptive filename (e.g., `feature-name-plan.html`). Open the result in the
-browser. Tell the user the file path.
+Write to `~/.agent/diagrams/` with a descriptive filename (e.g., `feature-name-plan.html`). Open the result in the browser. Tell the user the file path.
 
 Ultrathink.

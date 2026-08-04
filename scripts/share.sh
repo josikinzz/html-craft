@@ -24,28 +24,18 @@ if [ ! -f "$HTML_FILE" ]; then
     exit 1
 fi
 
-# Find vercel-deploy script. Allow the harness to provide an explicit path, then
-# fall back to common local skill/plugin locations.
+# Find vercel-deploy skill
 VERCEL_SCRIPT=""
-if [ -n "${VERCEL_DEPLOY_SCRIPT:-}" ] && [ -f "$VERCEL_DEPLOY_SCRIPT" ]; then
-    VERCEL_SCRIPT="$VERCEL_DEPLOY_SCRIPT"
-else
-    for dir in \
-        "$HOME/.agents/skills/vercel-deploy/scripts" \
-        "$HOME/.codex/skills/vercel-deploy/scripts" \
-        "$HOME/.config/opencode/skill/vercel-deploy/scripts" \
-        "./plugins/vercel-deploy/scripts" \
-        "/mnt/skills/user/vercel-deploy/scripts"; do
-        if [ -f "$dir/deploy.sh" ]; then
-            VERCEL_SCRIPT="$dir/deploy.sh"
-            break
-        fi
-    done
-fi
+for dir in ~/.pi/agent/skills/vercel-deploy/scripts /mnt/skills/user/vercel-deploy/scripts; do
+    if [ -f "$dir/deploy.sh" ]; then
+        VERCEL_SCRIPT="$dir/deploy.sh"
+        break
+    fi
+done
 
 if [ -z "$VERCEL_SCRIPT" ]; then
     echo -e "${RED}Error: vercel-deploy skill not found${NC}" >&2
-    echo "Set VERCEL_DEPLOY_SCRIPT=/absolute/path/to/deploy.sh or install a compatible vercel-deploy skill." >&2
+    echo "Install it with: pi install npm:vercel-deploy" >&2
     exit 1
 fi
 

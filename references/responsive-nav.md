@@ -81,10 +81,15 @@ Key structural rules:
   border-bottom: 1px solid var(--border);
 }
 
+/* TOC entries are navigation targets, not captions — they have to be readable
+   at a glance and clickable with confidence. 11px in --text-dim is the low
+   point of most palettes; 12px and a slightly stronger ink costs no space and
+   makes the rail usable. --text-dim still has to clear 4.5:1 here regardless. */
 .toc a {
   display: block;
-  font-size: 11px;
-  color: var(--text-dim);
+  font-size: 12px;
+  color: var(--text);
+  opacity: 0.78;
   text-decoration: none;
   padding: 4px 8px;
   border-radius: 5px;
@@ -93,11 +98,14 @@ Key structural rules:
   line-height: 1.4;
   margin-bottom: 1px;
 }
-.toc a:hover { color: var(--text); background: var(--surface2); }
-.toc a.active { color: var(--text); border-left-color: var(--accent); }
+.toc a:hover { color: var(--text); opacity: 1; background: var(--surface2); }
+.toc a.active { color: var(--text); opacity: 1; font-weight: 600; border-left-color: var(--accent); }
+.toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; opacity: 1; }
 ```
 
 Replace `var(--accent)` with your page's primary accent color variable (e.g., `var(--orange)`, `var(--blue)`).
+
+The 2px `border-left` on `.active` is a functional state indicator, not a decorative accent stripe — that carve-out is explicit in the Anti-Patterns section of `SKILL.md`. Note it's paired with a weight change so the active item is distinguishable without relying on the color alone.
 
 ### TOC — Mobile (sticky horizontal bar)
 
