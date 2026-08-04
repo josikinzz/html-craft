@@ -17,7 +17,7 @@ Read this before picking a single color. Almost every unreadable generated page 
 
 The reflex to avoid: `background: var(--accent); color: #fff`. It passes in whichever theme you happened to look at and fails in the other.
 
-**2. Small type in weak color.** Badges, chips, tags, and captions run 10–12px, where contrast matters *more*, not less. On a light surface, the popular mid-tone semantics all fail as text: `#059669` (3.7:1), `#0891b2` (3.6:1), `#d97706` (3.1:1), `#ef4444` (3.3:1). Drop a step: `#15803d`, `#0f766e`, `#b45309`, `#dc2626` all clear 4.5:1 against white while reading as the same hue.
+**2. Small type in weak color.** Badges, chips, tags, and captions run 10–12px, where contrast matters *more*, not less. On a light surface, the popular mid-tone semantics all fail as text: `#059669` (3.7:1), `#0891b2` (3.6:1), `#d97706` (3.1:1), `#ef4444` (3.3:1). Drop a step: `#15803d`, `#0f766e`, `#b45309`, `#b91c1c` all clear 4.5:1 against white while reading as the same hue.
 
 **3. `--text-dim` used as a body color.** Dim is for provenance stamps, timestamps, and captions — information a reader can skip. Bullets, card descriptions, and table cells go in `--text`; build hierarchy with size and weight, not by fading the words. `--text-dim` still has to clear 4.5:1 on every surface it lands on.
 
@@ -63,6 +63,15 @@ Every accent below appears three times — ink, fill, and the ink that goes on t
   --accent-on-fill: #f0fdfa;  /* 5.2:1 on --accent-fill */
   --accent-dim: rgba(15, 118, 110, 0.10);
 
+  /* Semantic tones — status, deltas, pass/fail. Deep ink on light surfaces. */
+  --green: #15803d;           /* 4.9:1 on --surface */
+  --green-dim: rgba(21, 128, 61, 0.10);
+  --red: #b91c1c;             /* 6.2:1 on --surface */
+  --red-dim: rgba(185, 28, 28, 0.10);
+  --orange: #b45309;          /* 4.9:1 on --surface */
+  --orange-dim: rgba(180, 83, 9, 0.10);
+  --orange-bright: #fbbf24;    /* bright FILL — takes dark ink, never white */
+
   /* Semantic accents for diagram elements — same three-part shape */
   --node-a: #0f766e;
   --node-a-dim: rgba(15, 118, 110, 0.10);
@@ -90,6 +99,16 @@ Every accent below appears three times — ink, fill, and the ink that goes on t
     --accent-fill: #0e5b6b;
     --accent-on-fill: #ecfeff;
     --accent-dim: rgba(34, 211, 238, 0.12);
+
+    /* Semantic tones flip bright, like the accent ink. */
+    --green: #4ade80;
+    --green-dim: rgba(74, 222, 128, 0.12);
+    --red: #f87171;
+    --red-dim: rgba(248, 113, 113, 0.12);
+    --orange: #fbbf24;
+    --orange-dim: rgba(251, 191, 36, 0.12);
+    --orange-bright: #fbbf24;
+
     --node-a: #22d3ee;
     --node-a-dim: rgba(34, 211, 238, 0.12);
     --node-b: #34d399;
@@ -738,7 +757,7 @@ Use real `<table>` elements for tabular data. Wrap in a scrollable container for
 
 Styled spans for match/gap/warning states. Never use emoji.
 
-These run at 11px on a tint of their own hue — the exact place contrast quietly fails. The semantic defaults below are one step deeper than the reflex picks (`#059669` → `#15803d`, `#ef4444` → `#dc2626`, `#d97706` → `#b45309`), which reads as the same color while clearing 4.5:1 on a light surface. In dark themes the ink flips bright and the same rule applies in reverse.
+These run at 11px on a tint of their own hue — the exact place contrast quietly fails. The semantic defaults below are one step deeper than the reflex picks (`#059669` → `#15803d`, `#ef4444` → `#b91c1c`, `#d97706` → `#b45309`), which reads as the same color while clearing 4.5:1 on a light surface. In dark themes the ink flips bright and the same rule applies in reverse.
 
 ```css
 .status {
@@ -761,8 +780,8 @@ These run at 11px on a tint of their own hue — the exact place contrast quietl
 }
 
 .status--gap {
-  background: var(--red-dim, rgba(220, 38, 38, 0.1));
-  color: var(--red, #dc2626);
+  background: var(--red-dim, rgba(185, 28, 28, 0.1));
+  color: var(--red, #b91c1c);
 }
 
 .status--warn {
@@ -786,7 +805,7 @@ These run at 11px on a tint of their own hue — the exact place contrast quietl
 }
 
 .status-dot--match { background: var(--green, #15803d); }
-.status-dot--gap { background: var(--red, #dc2626); }
+.status-dot--gap { background: var(--red, #b91c1c); }
 .status-dot--warn { background: var(--orange, #b45309); }
 ```
 
@@ -1142,7 +1161,7 @@ Large hero number with trend indicator and label. For dashboards, review summari
 /* 12px semantic text — needs the deep tones, and a glyph so the up/down
    distinction doesn't rest on color alone. */
 .kpi-card__trend--up { color: var(--node-b, #15803d); }
-.kpi-card__trend--down { color: var(--red, #dc2626); }
+.kpi-card__trend--down { color: var(--red, #b91c1c); }
 .kpi-card__trend--up::before { content: '▲ '; font-size: 9px; }
 .kpi-card__trend--down::before { content: '▼ '; font-size: 9px; }
 ```
@@ -1186,9 +1205,9 @@ Two-column comparison with diff-colored headers. For review pages, migration doc
 /* 11px uppercase mono on a tint of its own hue — use the deep tones.
    Before/after also carries a word, so the panels don't rely on color alone. */
 .diff-panel__header--before {
-  background: var(--red-dim, rgba(220, 38, 38, 0.08));
-  color: var(--red, #dc2626);
-  border-bottom: 2px solid var(--red, #dc2626);
+  background: var(--red-dim, rgba(185, 28, 28, 0.08));
+  color: var(--red, #b91c1c);
+  border-bottom: 2px solid var(--red, #b91c1c);
 }
 
 .diff-panel__header--after {

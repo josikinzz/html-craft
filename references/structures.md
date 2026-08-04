@@ -16,7 +16,7 @@ Pick from the content's semantics, not from what looks good.
 
 | Content shape | Structure | Notes |
 |---|---|---|
-| Narrowing, attrition, drop-off at each stage | **Funnel** | Segment width must encode the real number. |
+| Narrowing, attrition, drop-off at each stage | **Funnel** | Stage width must encode the real number. |
 | Positioning on two independent axes, tradeoffs | **Quadrant** | Needs both poles of both axes named. |
 | Part-whole priority stack, layered dependency (each tier rests on the one below) | **Pyramid** | Base = broadest/most foundational. Inverted only for narrowing. |
 | One concept with satellites, hub-and-spoke, facets of a whole | **Radial / sector** | 4–8 satellites. Past 8, use a grid. |
@@ -49,7 +49,7 @@ Stage width encodes the value. Labels live in a side column so text never sits o
 /* --w = this stage's width %, --wn = the next stage's. Both from real data. */
 .funnel__seg {
   height: 68px;
-  background: color-mix(in srgb, var(--accent) var(--tint, 70%), var(--surface));
+  background: var(--accent-fill);
   clip-path: polygon(
     calc(50% - var(--w) / 2) 0,   calc(50% + var(--w) / 2) 0,
     calc(50% + var(--wn) / 2) 100%, calc(50% - var(--wn) / 2) 100%
@@ -62,20 +62,32 @@ Stage width encodes the value. Labels live in a side column so text never sits o
 .funnel__meta b { display: block; font-family: var(--font-mono); }
 ```
 
+The fill stays flat because stage width already encodes the value. A tint ramp on top of it repeats that encoding and drags the ink below the contrast floor.
+
+Variant — a pale ramp, for pages that want the progression visible as color. A pale fill takes `var(--text)`, never `var(--accent-on-fill)`:
+
+```css
+/* --i counts from 0 at the widest stage */
+.funnel__seg--pale {
+  background: color-mix(in srgb, var(--accent) calc(18% - var(--i) * 4%), var(--surface));
+  color: var(--text);
+}
+```
+
 ```html
 <div class="funnel">
   <div class="funnel__row">
-    <div class="funnel__seg" style="--w:100%; --wn:62%; --tint:85%">12,400</div>
+    <div class="funnel__seg" style="--w:100%; --wn:62%">12,400</div>
     <div class="funnel__meta"><b>Visited</b>100% of cohort</div>
   </div>
   <div class="funnel__row">
-    <div class="funnel__seg" style="--w:62%; --wn:24%; --tint:65%">7,690</div>
+    <div class="funnel__seg" style="--w:62%; --wn:24%">7,690</div>
     <div class="funnel__meta"><b>Signed up</b>62% · −38%</div>
   </div>
 </div>
 ```
 
-Caveats: percentages inside `clip-path: polygon()` resolve against the element's own box, so the segment must be full-width and the taper drawn inside it. Below ~560px, drop the side column (`grid-template-columns: 1fr`) and move the label above its segment.
+Caveats: percentages inside `clip-path: polygon()` resolve against the element's own box, so the stage must be full-width and the taper drawn inside it. Below ~560px, drop the side column (`grid-template-columns: 1fr`) and move the label above its stage.
 
 ### Quadrant
 
@@ -88,8 +100,9 @@ Grid for the four cells, absolute positioning for plotted items.
   aspect-ratio: 1; position: relative;
   border: 1px solid var(--border-bright); border-radius: 12px; overflow: hidden;
 }
-.quad__cell { padding: 14px; background: var(--surface); border: 0.5px solid var(--border); }
-.quad__cell h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-dim); margin: 0; }
+/* Surface and border come from .ve-card; only geometry lives here. */
+.quad__cell { padding: 14px; min-width: 0; }
+.quad__cell h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text); margin: 0; }
 .quad__cell--hi { background: color-mix(in srgb, var(--accent) 6%, var(--surface)); }
 
 /* Plotted item: --x and --y are 0–100 in data space, y measured upward. */
@@ -104,9 +117,19 @@ Grid for the four cells, absolute positioning for plotted items.
 
 /* Axis poles — four labels, one per direction. */
 .quad-wrap { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto 1fr auto; gap: 8px; align-items: center; }
-.quad-wrap__y { writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; font-size: 11px; color: var(--text-dim); }
-.quad-wrap__x { grid-column: 2; text-align: center; font-size: 11px; color: var(--text-dim); }
+.quad-wrap > * { min-width: 0; }
+.quad-wrap__y { writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; font-size: 11px; color: var(--text); }
+.quad-wrap__x { grid-column: 2; text-align: center; font-size: 11px; color: var(--text); }
 ```
+
+```html
+<div class="quad">
+  <div class="ve-card quad__cell"><h4>Quick wins</h4></div>
+  <div class="ve-card quad__cell quad__cell--hi"><h4>Big bets</h4></div>
+</div>
+```
+
+The cell names and the axis poles are the data, so they take `var(--text)`. Uppercase and letterspacing carry the secondary read instead.
 
 Caveats: `aspect-ratio: 1` keeps the two axes commensurate — a stretched quadrant misreads distances. Items near an edge overflow their translate; give the container `padding` or clamp `--x`/`--y` to 6–94. On narrow viewports keep the square and shrink the item font rather than reflowing, since position *is* the content.
 
@@ -123,14 +146,22 @@ Tiers widen toward the base. Text sits in a full-width inner box, never on the s
   padding: 14px 20px;
   border-radius: 8px;
   text-align: center;
-  background: color-mix(in srgb, var(--accent) calc(70% - var(--i) * 14%), var(--surface));
+  background: var(--accent-fill);
   color: var(--accent-on-fill);
-  border: 1px solid var(--border);
 }
 .pyr__tier b { display: block; font-size: 14px; }
-.pyr__tier span { font-size: 12px; opacity: 0.85; }
+.pyr__tier span { font-size: 12px; }
 
 @media (max-width: 640px) { .pyr__tier { width: 100%; } }  /* stack of equal bars keeps labels readable */
+```
+
+Tier width already encodes the tier, so the fill stays flat. For a page that wants the depth visible as color, use the pale ramp and flip the ink to `var(--text)` — a pale fill never takes `var(--accent-on-fill)`:
+
+```css
+.pyr__tier--pale {
+  background: color-mix(in srgb, var(--accent) calc(18% - var(--i) * 4%), var(--surface));
+  color: var(--text);
+}
 ```
 
 For a true triangular silhouette rather than stepped bars, clip each tier with the funnel's `polygon()` using `--w`/`--wn` and inverted ordering. Prefer the stepped version: it holds text at any width.
@@ -153,9 +184,10 @@ Satellites orbit a hub. Angles come from `--n` (count) and `--k` (index).
   transform:
     rotate(var(--angle)) translate(38%) rotate(calc(-1 * var(--angle)))
     translate(-50%, -50%);
-  width: 128px; padding: 10px 12px;
-  background: var(--surface-elevated); border: 1px solid var(--border);
-  border-radius: 10px; font-size: 12px; text-align: center;
+  /* Surface, border, and shadow come from .ve-card .ve-card--elevated. */
+  width: 128px; max-width: 40%; padding: 10px 12px;
+  font-size: 12px; text-align: center;
+  overflow-wrap: break-word; hyphens: auto;
 }
 /* Spoke lines: one absolutely positioned SVG overlay, per css-patterns.md → Connectors. */
 
@@ -166,7 +198,15 @@ Satellites orbit a hub. Angles come from `--n` (count) and `--k` (index).
 }
 ```
 
-Caveats: the translate percentage is relative to the spoke's own width, so give spokes a fixed `width` and tune the `translate()` value until the ring clears the hub. Write the spokes in the DOM in reading order (clockwise from 12 o'clock) — visual position carries no meaning for a screen reader. The narrow-viewport block above turns the ring into a list; ship it.
+```html
+<div class="radial" style="--n:6">
+  <div class="radial__hub">Core</div>
+  <div class="ve-card ve-card--elevated radial__spoke" style="--k:0">Ingest</div>
+  <div class="ve-card ve-card--elevated radial__spoke" style="--k:1">Validate</div>
+</div>
+```
+
+Caveats: the translate percentage resolves against the spoke's own width. Give every spoke a fixed `width`, then tune `translate()` until the ring clears the hub. Write the spokes in the DOM in reading order (clockwise from 12 o'clock) — visual position carries no meaning for a screen reader. The narrow-viewport block above turns the ring into a list; ship it.
 
 ### Waterfall / staggered list
 
@@ -197,7 +237,7 @@ Alternating sides, one step per row, index in the gutter.
   display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center;
   position: relative;
 }
-.zig__step > * { min-width: 0; }
+.zig__step > * { min-width: 0; overflow-wrap: break-word; }
 .zig__step > .zig__body { grid-column: 1; text-align: right; }
 .zig__step > .zig__aside { grid-column: 2; }
 .zig__step:nth-child(even) > .zig__body  { grid-column: 2; text-align: left; }
@@ -220,6 +260,8 @@ Alternating sides, one step per row, index in the gutter.
 }
 ```
 
+Caveat: a CSS counter draws the number but leaves it out of the DOM, where assistive technology cannot reach it. Build the sequence as an `<ol>`, or carry the number as `data-step` and print it with `content: attr(data-step)`.
+
 Caveat: right-aligned text is hard to read past two lines. Keep the left column short, or use `text-align: left` on both sides and let the spine alone carry the alternation.
 
 ### Binary compare with center spine
@@ -230,7 +272,7 @@ Caveat: right-aligned text is hard to read past two lines. Keep the left column 
   align-items: stretch;
 }
 .versus > * { min-width: 0; overflow-wrap: break-word; }
-.versus__side { padding: 20px 24px; background: var(--surface); }
+.versus__side { padding: 20px 24px; }   /* surface and border come from .ve-card */
 .versus__side--a { border-radius: 12px 0 0 12px; }
 .versus__side--b { border-radius: 0 12px 12px 0; background: color-mix(in srgb, var(--accent) 5%, var(--surface)); }
 .versus__spine {
@@ -254,6 +296,14 @@ Caveat: right-aligned text is hard to read past two lines. Keep the left column 
 }
 ```
 
+```html
+<div class="versus">
+  <div class="ve-card versus__side versus__side--a">Build in house</div>
+  <div class="versus__spine"></div>
+  <div class="ve-card versus__side versus__side--b">Buy the vendor</div>
+</div>
+```
+
 Caveat: side-by-side panels only compare if their rows line up. For more than three attributes, use one `.versus` grid per attribute (or a two-column table) rather than two free-running columns of prose.
 
 ### Snake path / roadmap
@@ -261,21 +311,20 @@ Caveat: side-by-side panels only compare if their rows line up. For more than th
 Long sequences wrap across rows; alternate rows reverse so the reading path is continuous.
 
 ```css
-.snake { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-.snake > * { min-width: 0; }
+.snake { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; list-style: none; margin: 0; padding: 0; }
+.snake > * { min-width: 0; overflow-wrap: break-word; }
 /* Reverse every second row of 4 — items 5–8, 13–16, … */
 .snake > :nth-child(8n+5) { grid-column: 4; }
 .snake > :nth-child(8n+6) { grid-column: 3; }
 .snake > :nth-child(8n+7) { grid-column: 2; }
 .snake > :nth-child(8n+8) { grid-column: 1; }
 
-.snake__stop {
-  padding: 14px 16px; border-radius: 10px;
-  background: var(--surface); border: 1px solid var(--border);
+.snake__stop {                          /* surface and border come from .ve-card */
+  padding: 14px 16px;
   font-size: 13px;
 }
 .snake__stop::before {
-  content: counter(stop); counter-increment: stop;
+  content: counter(stop); counter-increment: stop;   /* or attr(data-step) — see the caveat */
   display: block; font-family: var(--font-mono); font-size: 11px; color: var(--accent); margin-bottom: 4px;
 }
 .snake { counter-reset: stop; }
@@ -287,7 +336,14 @@ Long sequences wrap across rows; alternate rows reverse so the reading path is c
 }
 ```
 
-Caveats: the explicit `grid-column` reversal is tied to the column count, so each breakpoint that changes the count must reset or redefine it — the `!important` in the single-column block does that. DOM order stays the true sequence order, so keyboard and screen-reader traversal is correct even where the visual row runs right-to-left. Draw the connecting arrows with an absolutely positioned SVG overlay (`css-patterns.md` → Connectors) or omit them; the numbered stops already carry the order.
+```html
+<ol class="snake">
+  <li class="ve-card snake__stop">Intake</li>
+  <li class="ve-card snake__stop">Triage</li>
+</ol>
+```
+
+Caveats: the `grid-column` reversal is tied to the column count. Each breakpoint that changes the count must reset it, and the `!important` above does that. A CSS counter draws the stop number but leaves it out of the DOM, where assistive technology cannot reach it — build the sequence as an `<ol>`, or carry the number as `data-step` and print it with `content: attr(data-step)`. DOM order stays the true sequence order, so keyboard and screen-reader traversal is correct even where the visual row runs right-to-left. Draw the connecting arrows with an absolutely positioned SVG overlay (`css-patterns.md` → Connectors) or omit them; the numbered stops already carry the order.
 
 ## Item motifs
 
@@ -344,10 +400,10 @@ Sketches for the less obvious ones:
 
 These shapes imply quantities and relationships, so they carry a higher burden than a card grid.
 
-- **Encoded size states its value.** A funnel segment's width, a pyramid tier's width, a sector's angle, a bar's length — each comes from the real number and prints that number as text beside it. Sizes chosen for looks are decoration impersonating a chart.
+- **Encoded size states its value.** A funnel stage's width, a pyramid tier's width, a sector's angle, a bar's length: each comes from the real number. Print that number as text beside it. Sizes chosen for looks are decoration impersonating a chart.
 - **Name both poles of both quadrant axes** ("Low effort → High effort", "Low impact → High impact"), and label the four cells. An unlabelled quadrant is four boxes.
 - **DOM order is reading order.** Radial, snake, and zigzag place items by transform and grid-column; keep the source order the true sequence so keyboard and screen-reader traversal match the meaning.
 - **Reflow geometry to a list under ~620px.** Radial rings, snakes, and zigzags become a single readable column. The quadrant is the exception — its positions are the data, so it stays square and shrinks.
 - **Text sits on an opaque wash.** No labels over hatching, gradients, or sloped clip edges; the sloped-edge case is why every recipe above keeps the label in its own box.
 - **Redundant encoding.** Anything told by color alone also carries a glyph, a word, or a number (`css-patterns.md` → Status Indicators).
-- **Contrast floors hold everywhere**: 4.5:1 for text under 19px, 3:1 for meaningful non-text such as spines, beads, and segment edges. Decorative watermark numerals stay at or below 0.08 alpha.
+- **Contrast floors hold everywhere**: 4.5:1 for text under 19px, 3:1 for meaningful non-text such as spines, beads, and stage edges. Decorative watermark numerals stay at or below 0.08 alpha.

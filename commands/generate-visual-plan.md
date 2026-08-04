@@ -136,8 +136,8 @@ Each task row carries a stable `id` and a `data-status` of `todo`, `doing`, `don
 .task[data-status="doing"] { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
 .task[data-status="doing"] .task-mark { border-color: var(--accent); background: var(--accent-dim); }
 
-.task[data-status="blocked"] { background: color-mix(in srgb, var(--red, #dc2626) 6%, var(--surface)); }
-.task[data-status="blocked"] .task-mark { border-color: var(--red, #dc2626); }
+.task[data-status="blocked"] { background: color-mix(in srgb, var(--red, #b91c1c) 6%, var(--surface)); }
+.task[data-status="blocked"] .task-mark { border-color: var(--red, #b91c1c); }
 
 .task[data-status="dropped"] { opacity: .65; }
 .task[data-status="dropped"] .task-title { text-decoration: line-through; }
