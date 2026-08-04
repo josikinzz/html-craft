@@ -2,7 +2,10 @@
 
 An agent skill that writes self-contained HTML pages — one file, no sidecar assets — and opens them in your browser.
 
-The organizing idea is that the page exists so you can **check** the work, not receive a conclusion. Where two views are possible, the skill picks the one that lets you verify a claim: the diff over the summary of the diff, `parser.py:88` over "the parser", the checklist with its boxes in their real state over "mostly done". Every page ends with a provenance footer naming the files, branch, and commit it was built from.
+The organizing idea is that a page is a working surface, not a report. It keeps you in the loop on your own work, two ways:
+
+- **Check.** The page leads with the conclusion and attaches what it rests on — `parser.py:88` rather than "the parser", the number rather than "significantly faster", the checklist in its real state rather than "mostly done". You take the answer and verify it only if you want to. Every page ends with a provenance footer naming the files, branch, and commit it was built from.
+- **Steer.** Where a decision is still open, the page gives you a handle on it — options side by side, a task status you can correct, an export that carries your edits back into the conversation as text. A page that arrives after the work is done can only be audited; the same page at a decision point changes what happens next.
 
 See [`SKILL.md`](./SKILL.md) for the full behavior.
 

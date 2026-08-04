@@ -1,6 +1,6 @@
 ---
 name: html-craft
-description: Craft self-contained HTML pages that make work auditable — diagrams, plans with a live task ledger, reviews, slides, data tables, and single-file interactive tools that round-trip their result back as text. Use when the user asks for a diagram, architecture overview, comparison table, or any visual explanation of technical concepts; wants an implementation plan tracked as work proceeds; wants to browse a corpus of docs or reports; wants several approaches laid out side by side; or needs a throwaway editor for the data at hand. Also use proactively when you are about to render a complex ASCII table (4+ rows or 3+ columns) — present it as a styled HTML page instead.
+description: Craft self-contained HTML pages that keep the user in the loop on their own work — pages they can check and act on, not just read. Diagrams, plans with a live task ledger, reviews, slides, data tables, and single-file interactive tools that round-trip their result back as text. Use when the user asks for a diagram, architecture overview, comparison table, or any visual explanation of technical concepts; wants an implementation plan tracked as work proceeds; wants to browse a corpus of docs or reports; wants several approaches laid out side by side; or needs a throwaway editor for the data at hand. Also use proactively when you are about to render a complex ASCII table (4+ rows or 3+ columns) — present it as a styled HTML page instead.
 license: MIT
 compatibility: Requires a browser to view generated HTML files. Optional surf-cli for AI image generation.
 metadata:
@@ -13,7 +13,11 @@ metadata:
 
 Generate self-contained HTML files for technical diagrams, visualizations, data tables, and interactive tools, and open the result in the browser.
 
-**Make the page auditable.** The page exists so the user can *check* the work, not just receive it. Whenever two views are possible, pick the one that lets the user verify a claim over the one that states the conclusion: the diff over the summary of the diff, the `file.py:88` over "the parser", the checklist with its boxes in their real state over "mostly done", the number over "significantly faster". Every claim on the page carries the evidence a reader would ask for next.
+**The page is a working surface, not a report.** It keeps the user in the loop on their own work, and it does that two ways. Most pages do both.
+
+**Check.** Lead with the conclusion, then attach what it rests on. A claim about a real artifact — the user's code, their data, the state of their work — carries the evidence a reader would ask for next: the `file.py:88`, the command, the commit, the number instead of "significantly faster", the checklist in its real state instead of "mostly done". The reader takes the conclusion and checks it only if they want to. A page that explains a concept rather than asserting something about the user's work has nothing to audit, and this half does not bind it. A short answer in chat alongside a page carrying the detail is the normal split, not a failure to summarize.
+
+**Steer.** The page is where the user gets back into the work, so give them something to act on and a way to hand it back: options to choose between, a status to correct, a list to reorder, a value to tune, a claim to mark wrong. Timing is the lever — a page delivered after the work is finished can only be audited, while the same page at a decision point changes what happens next. When a decision is live, put the page in front of the user before you commit to an answer. The round-trip export is the strongest form of this: the user edits, exports, and the result re-enters the work as text (`./references/tool-patterns.md`).
 
 **Proactive table rendering.** When you are about to present tabular data as an ASCII box-drawing table in the terminal (4+ rows or 3+ columns — comparisons, audits, feature matrices, status reports, requirement audits, API inventories), generate an HTML page instead without waiting to be asked. A brief text summary in chat is fine; the table belongs in the browser.
 
@@ -42,7 +46,9 @@ Prompt templates in `./commands/`, invoked as slash commands namespaced by harne
 
 Commit to a direction before writing HTML.
 
-**What must the reader be able to check?** Name the claims the page makes and the evidence each one needs. That list drives structure: an auditable page puts the evidence next to the claim, not in an appendix.
+**What must the reader be able to check?** Name the claims the page makes about a real artifact, and the evidence each one needs. That list drives structure: the evidence sits next to its claim, not in an appendix.
+
+**What is the reader about to decide?** Name the open decision, if there is one, and give it a handle on the page — the options side by side, the status they can correct, the export that carries their edit back. If the decision is already made and the work is done, the page is a record and only the check half applies.
 
 **Visual is always default.** Essays, blog posts, and articles get visual treatment too — extract structure into cards, diagrams, grids, tables. Prose patterns (lead paragraphs, pull quotes, callout boxes) are **accent elements** within visual pages, not a separate mode — see "Prose Page Elements" in `./references/css-patterns.md`.
 
@@ -184,7 +190,7 @@ Put your primary aesthetic in `:root` and the alternate in the media query:
 
 #### Page Voice
 
-These rules govern the **body copy and labels** on the generated page — card text, captions, callouts, table cells, tooltips, button labels. Display headlines in an expressive aesthetic are exempt. Derived from ASD-STE100 Simplified Technical English; auditable copy is copy a reader can check against the thing it describes.
+These rules govern the **body copy and labels** on the generated page — card text, captions, callouts, table cells, tooltips, button labels. Display headlines in an expressive aesthetic are exempt. Derived from ASD-STE100 Simplified Technical English; copy that survives one read is copy a reader can check against the thing it describes.
 
 - **Length.** No instruction sentence over 20 words. No explanation sentence over 25. One fact per sentence — split a sentence that carries two.
 - **One word per concept, page-wide.** Choose `run` or `execute` or `invoke` and use only that one everywhere. Same for show/display/render, remove/delete/drop, error/failure/fault. Rotation reads as three different things.
@@ -219,7 +225,8 @@ Deliver only after every check passes.
 - **The swap test**: would replacing your fonts and colors with a generic dark theme make this indistinguishable from a template? If yes, push the aesthetic further.
 - **The slop test**: review the page against `./references/anti-patterns.md`. Two or more slop signals means regenerate with a different aesthetic direction.
 - **Page voice**: every body sentence passes the Page Voice specs — under the word cap, one fact, one word per concept, no empty adjectives.
-- **Auditable**: every claim on the page names its source — the file:line, the command, the commit, the document. A reader who doubts a cell can find what it came from without asking you.
+- **Checkable**: every claim about a real artifact names its source — the file:line, the command, the commit, the document. A reader who doubts a cell can find what it came from without asking you. Pages that explain a concept are exempt.
+- **Steerable**: where a decision is still open, the reader has a way to act on it — options to pick between, a status to correct, an export that carries their edit back. A page that leaves them nothing to do but agree has skipped this.
 - **Both themes**: toggle your OS between light and dark. Both look intentional.
 - **Information completeness**: the page conveys what the user asked for. Pretty but incomplete is a failure.
 - **No overflow**: resize the browser across widths. Nothing clips or escapes its container. Every grid and flex child needs `min-width: 0`; side-by-side panels need `overflow-wrap: break-word`; `<li>` keeps its default `display` so markers render. See Overflow Protection in `./references/css-patterns.md`.
