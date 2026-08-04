@@ -145,6 +145,30 @@ If an aesthetic genuinely calls for a bright fill (a risograph spot color, a ter
 }
 ```
 
+## Spatial Scale
+
+Three scales govern every page. Pick from them rather than inventing a near-miss value — a 13px gap beside a 12px one reads as a mistake, not a decision.
+
+**Spacing — a 4pt scale.** `4, 8, 12, 16, 24, 32, 48, 64, 96`. Use `gap` for sibling spacing rather than margins. Vary spacing to build hierarchy: a heading with more space above it reads as more important.
+
+Geometry that carries meaning is exempt: a `clip-path` percentage, a translate distance tuned to a ring radius, a container measure such as `max-width: 640px`. Comment the value where it leaves the scale.
+
+**Radius.**
+
+| Value | Use |
+|---|---|
+| `3px` | Chips, inline code, small tags |
+| `6px` | Buttons, inputs, tabs |
+| `10px` | Cards and panels — the `.hc-card` value |
+| `999px` | Pills and capsules |
+| `50%` | Discs, beads, avatars |
+
+**Breakpoints.** `768px` is the primary reflow: multi-column layouts become one column, side rails move above or below the content. `900px` reduces column count on layouts that carry four or more columns, so they step down before they reach 768px.
+
+Two breakpoints cover almost every page. Add a third only when content genuinely breaks between them, and reuse it across the page rather than tuning one per component.
+
+**Known drift.** Some values in this file predate these scales — radii at 2, 4, 5, 8, and 12px, and single uses of 720px and 1000px breakpoints. Align them when you next touch that section. New work takes the scales above.
+
 ## Background Atmosphere
 
 Flat backgrounds feel dead. Use subtle gradients or patterns.
