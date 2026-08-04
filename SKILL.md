@@ -23,7 +23,7 @@ Generate self-contained HTML files for technical diagrams, visualizations, data 
 
 ## Available Commands
 
-Prompt templates in `./commands/`, invoked as slash commands namespaced by harness (e.g. `/html-craft:diff-review` in Claude Code, `/diff-review` in Pi).
+Prompt templates in `./commands/`, invoked as slash commands namespaced by harness: `/html-craft:diff-review` in Claude Code, `/diff-review` in Pi. In Codex, use `/prompts:diff-review` when the templates are installed to `~/.codex/prompts/`; otherwise name the skill and describe the workflow.
 
 | Command | What it does |
 |---------|-------------|

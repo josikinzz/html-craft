@@ -3,7 +3,9 @@ description: Deploy a generated html-craft HTML page and return a live Vercel UR
 ---
 # Share HTML Craft Page
 
-Share a visual explainer HTML file instantly via Vercel. Returns a live URL with no authentication required when a Pi-compatible `vercel-deploy` skill is installed.
+Share a generated HTML file via Vercel. Returns a live URL with no authentication required when a Pi-compatible `vercel-deploy` skill is installed.
+
+Share only when `scripts/share.sh` and compatible `vercel-deploy` tooling are both present. When either is missing, keep the page local and give the user its path — a failed deploy attempt is worse than no deploy.
 
 ## Usage
 
@@ -35,13 +37,13 @@ No Vercel account, Cloudflare account, or API keys needed. The deployment is "cl
 
 ## Script Location
 
-Resolve the script from the installed skill directory, then run it with the HTML file path:
+Locate `scripts/share.sh` in the skill directory you were loaded from, rather than assuming an install path, then run it with the HTML file path:
 
 ```bash
-bash ~/.pi/agent/skills/html-craft/scripts/share.sh <file>
+bash /absolute/path/to/html-craft/scripts/share.sh <file>
 ```
 
-If the skill is installed somewhere else, use that install path instead. Common locations include `~/.codex/skills/html-craft/scripts/share.sh`, `~/.config/opencode/skill/html-craft/scripts/share.sh`, or `./plugins/html-craft/scripts/share.sh` from a repository checkout.
+Common locations include `~/.pi/agent/skills/html-craft/scripts/share.sh`, `~/.codex/skills/html-craft/scripts/share.sh`, `~/.config/opencode/skill/html-craft/scripts/share.sh`, or `./plugins/html-craft/scripts/share.sh` from a repository checkout.
 
 The script currently looks for the Pi-compatible `vercel-deploy` script in the standard Pi skill locations. Other harnesses can generate and open HTML normally, but sharing requires that dependency to be available in a compatible location.
 
