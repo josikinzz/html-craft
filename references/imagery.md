@@ -4,15 +4,15 @@ Optional: if [surf-cli](https://github.com/nicobailon/surf-cli) is available, ge
 
 ```bash
 # Generate to a temp file (use --aspect-ratio for control)
-surf gemini "descriptive prompt" --generate-image /tmp/ve-img.png --aspect-ratio 16:9
+surf gemini "descriptive prompt" --generate-image /tmp/hc-img.png --aspect-ratio 16:9
 
 # Base64 encode for self-containment (macOS)
-IMG=$(base64 -i /tmp/ve-img.png)
-# Linux: IMG=$(base64 -w 0 /tmp/ve-img.png)
+IMG=$(base64 -i /tmp/hc-img.png)
+# Linux: IMG=$(base64 -w 0 /tmp/hc-img.png)
 
 # Embed in HTML and clean up
 # <img src="data:image/png;base64,${IMG}" alt="descriptive alt text">
-rm /tmp/ve-img.png
+rm /tmp/hc-img.png
 ```
 
 See `css-patterns.md` for image container styles (hero banners, inline illustrations, captions). For slide decks, see the "Proactive Imagery" section in `slide-patterns.md`.

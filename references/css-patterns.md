@@ -225,10 +225,10 @@ On dark backgrounds, use bright accents (`#22d3ee`, `#34d399`, `#fbbf24`). On li
 
 The fundamental building block. A colored card representing a system component, pipeline step, or data entity.
 
-**IMPORTANT: Never use `.node` as a CSS class name.** Mermaid.js internally uses `.node` on its SVG `<g>` elements with `transform: translate(x, y)` for positioning. Any page-level `.node` styles (hover transforms, box-shadows, transitions) will leak into Mermaid diagrams and break their layout. Use `.ve-card` instead (namespaced to avoid collisions with CSS frameworks like Bootstrap/Tailwind that also use `.card`).
+**IMPORTANT: Never use `.node` as a CSS class name.** Mermaid.js internally uses `.node` on its SVG `<g>` elements with `transform: translate(x, y)` for positioning. Any page-level `.node` styles (hover transforms, box-shadows, transitions) will leak into Mermaid diagrams and break their layout. Use `.hc-card` instead (namespaced to avoid collisions with CSS frameworks like Bootstrap/Tailwind that also use `.card`).
 
 ```css
-.ve-card {
+.hc-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -238,7 +238,7 @@ The fundamental building block. A colored card representing a system component, 
 
 /* Colored accent variant — full tinted border + faint background wash
    (side-stripes are banned; see Anti-Patterns in SKILL.md) */
-.ve-card--accent-a {
+.hc-card--accent-a {
   border-color: color-mix(in srgb, var(--node-a) 45%, var(--border));
   background: color-mix(in srgb, var(--node-a) 6%, var(--surface));
 }
@@ -246,27 +246,27 @@ The fundamental building block. A colored card representing a system component, 
 /* --- Depth tiers: vary card depth to signal importance --- */
 
 /* Elevated: KPIs, key sections, anything that should pop */
-.ve-card--elevated {
+.hc-card--elevated {
   background: var(--surface-elevated);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 /* Recessed: code blocks, secondary content, detail panels */
-.ve-card--recessed {
+.hc-card--recessed {
   background: color-mix(in srgb, var(--bg) 70%, var(--surface) 30%);
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
   border-color: var(--border);
 }
 
 /* Hero: executive summaries, focal elements — demands attention */
-.ve-card--hero {
+.hc-card--hero {
   background: color-mix(in srgb, var(--surface) 92%, var(--accent) 8%);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
   border-color: color-mix(in srgb, var(--border) 50%, var(--accent) 50%);
 }
 
 /* Glass: special-occasion overlay effect (use sparingly) */
-.ve-card--glass {
+.hc-card--glass {
   background: color-mix(in srgb, var(--surface) 60%, transparent 40%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -274,7 +274,7 @@ The fundamental building block. A colored card representing a system component, 
 }
 
 /* Section label (monospace, uppercase, small) */
-.ve-card__label {
+.hc-card__label {
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 600;
@@ -288,7 +288,7 @@ The fundamental building block. A colored card representing a system component, 
 }
 
 /* Colored dot indicator */
-.ve-card__label::before {
+.hc-card__label::before {
   content: '';
   width: 8px;
   height: 8px;
@@ -928,7 +928,7 @@ Define the keyframe once, then stagger via a `--i` CSS variable set per element.
   to { opacity: 1; transform: translateY(0); }
 }
 
-.ve-card {
+.hc-card {
   animation: fadeUp 0.4s ease-out both;
   animation-delay: calc(var(--i, 0) * 0.05s);
 }
@@ -937,20 +937,20 @@ Define the keyframe once, then stagger via a `--i` CSS variable set per element.
 Set `--i` per element in the HTML to control stagger order:
 
 ```html
-<div class="ve-card" style="--i: 0">First</div>
+<div class="hc-card" style="--i: 0">First</div>
 <div class="connector">...</div>
-<div class="ve-card" style="--i: 1">Second</div>
+<div class="hc-card" style="--i: 1">Second</div>
 <div class="connector">...</div>
-<div class="ve-card" style="--i: 2">Third</div>
+<div class="hc-card" style="--i: 2">Third</div>
 ```
 
 ### Hover Lift
 ```css
-.ve-card {
+.hc-card {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.ve-card:hover {
+.hc-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }

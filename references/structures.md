@@ -35,7 +35,7 @@ Two structures on one page is a strong page. Four is a scrapbook.
 
 ## Structure recipes
 
-All recipes assume the tokens in [`css-patterns.md`](css-patterns.md) (`--surface`, `--border`, `--accent`, the ink/fill pairs, `.ve-card` depth tiers). Every grid and flex child below carries `min-width: 0`; content wraps rather than clipping horizontally.
+All recipes assume the tokens in [`css-patterns.md`](css-patterns.md) (`--surface`, `--border`, `--accent`, the ink/fill pairs, `.hc-card` depth tiers). Every grid and flex child below carries `min-width: 0`; content wraps rather than clipping horizontally.
 
 ### Funnel
 
@@ -100,7 +100,7 @@ Grid for the four cells, absolute positioning for plotted items.
   aspect-ratio: 1; position: relative;
   border: 1px solid var(--border-bright); border-radius: 12px; overflow: hidden;
 }
-/* Surface and border come from .ve-card; only geometry lives here. */
+/* Surface and border come from .hc-card; only geometry lives here. */
 .quad__cell { padding: 14px; min-width: 0; }
 .quad__cell h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text); margin: 0; }
 .quad__cell--hi { background: color-mix(in srgb, var(--accent) 6%, var(--surface)); }
@@ -124,8 +124,8 @@ Grid for the four cells, absolute positioning for plotted items.
 
 ```html
 <div class="quad">
-  <div class="ve-card quad__cell"><h4>Quick wins</h4></div>
-  <div class="ve-card quad__cell quad__cell--hi"><h4>Big bets</h4></div>
+  <div class="hc-card quad__cell"><h4>Quick wins</h4></div>
+  <div class="hc-card quad__cell quad__cell--hi"><h4>Big bets</h4></div>
 </div>
 ```
 
@@ -184,7 +184,7 @@ Satellites orbit a hub. Angles come from `--n` (count) and `--k` (index).
   transform:
     rotate(var(--angle)) translate(38%) rotate(calc(-1 * var(--angle)))
     translate(-50%, -50%);
-  /* Surface, border, and shadow come from .ve-card .ve-card--elevated. */
+  /* Surface, border, and shadow come from .hc-card .hc-card--elevated. */
   width: 128px; max-width: 40%; padding: 10px 12px;
   font-size: 12px; text-align: center;
   overflow-wrap: break-word; hyphens: auto;
@@ -201,8 +201,8 @@ Satellites orbit a hub. Angles come from `--n` (count) and `--k` (index).
 ```html
 <div class="radial" style="--n:6">
   <div class="radial__hub">Core</div>
-  <div class="ve-card ve-card--elevated radial__spoke" style="--k:0">Ingest</div>
-  <div class="ve-card ve-card--elevated radial__spoke" style="--k:1">Validate</div>
+  <div class="hc-card hc-card--elevated radial__spoke" style="--k:0">Ingest</div>
+  <div class="hc-card hc-card--elevated radial__spoke" style="--k:1">Validate</div>
 </div>
 ```
 
@@ -272,7 +272,7 @@ Caveat: right-aligned text is hard to read past two lines. Keep the left column 
   align-items: stretch;
 }
 .versus > * { min-width: 0; overflow-wrap: break-word; }
-.versus__side { padding: 20px 24px; }   /* surface and border come from .ve-card */
+.versus__side { padding: 20px 24px; }   /* surface and border come from .hc-card */
 .versus__side--a { border-radius: 12px 0 0 12px; }
 .versus__side--b { border-radius: 0 12px 12px 0; background: color-mix(in srgb, var(--accent) 5%, var(--surface)); }
 .versus__spine {
@@ -298,9 +298,9 @@ Caveat: right-aligned text is hard to read past two lines. Keep the left column 
 
 ```html
 <div class="versus">
-  <div class="ve-card versus__side versus__side--a">Build in house</div>
+  <div class="hc-card versus__side versus__side--a">Build in house</div>
   <div class="versus__spine"></div>
-  <div class="ve-card versus__side versus__side--b">Buy the vendor</div>
+  <div class="hc-card versus__side versus__side--b">Buy the vendor</div>
 </div>
 ```
 
@@ -319,7 +319,7 @@ Long sequences wrap across rows; alternate rows reverse so the reading path is c
 .snake > :nth-child(8n+7) { grid-column: 2; }
 .snake > :nth-child(8n+8) { grid-column: 1; }
 
-.snake__stop {                          /* surface and border come from .ve-card */
+.snake__stop {                          /* surface and border come from .hc-card */
   padding: 14px 16px;
   font-size: 13px;
 }
@@ -338,8 +338,8 @@ Long sequences wrap across rows; alternate rows reverse so the reading path is c
 
 ```html
 <ol class="snake">
-  <li class="ve-card snake__stop">Intake</li>
-  <li class="ve-card snake__stop">Triage</li>
+  <li class="hc-card snake__stop">Intake</li>
+  <li class="hc-card snake__stop">Triage</li>
 </ol>
 ```
 
@@ -351,7 +351,7 @@ The repeating unit. Pick independently of Structure, and pick a different one th
 
 | Motif | What it is |
 |---|---|
-| **Indexed card** | `.ve-card` with a large mono numeral in the corner. Ordered structures. |
+| **Indexed card** | `.hc-card` with a large mono numeral in the corner. Ordered structures. |
 | **Pill badge** | Rounded capsule, one line. Dense peer sets, quadrant plots, tag rows. |
 | **Progress card** | Card with a value bar underneath (`css-patterns.md` → Sparklines). Anything with a magnitude. |
 | **Circle node** | Fixed-size disc with a glyph or number. Radial spokes, snake stops, step beads. |

@@ -1086,17 +1086,17 @@ Slides should reach for visuals before defaulting to text alone. If a slide coul
 which surf
 
 # Generate (one per target slide)
-surf gemini "descriptive prompt matching deck palette" --generate-image /tmp/ve-slide-title.png --aspect-ratio 16:9
+surf gemini "descriptive prompt matching deck palette" --generate-image /tmp/hc-slide-title.png --aspect-ratio 16:9
 
 # Base64 encode for self-containment (macOS)
-TITLE_IMG=$(base64 -i /tmp/ve-slide-title.png)
-# Linux: TITLE_IMG=$(base64 -w 0 /tmp/ve-slide-title.png)
+TITLE_IMG=$(base64 -i /tmp/hc-slide-title.png)
+# Linux: TITLE_IMG=$(base64 -w 0 /tmp/hc-slide-title.png)
 
 # Embed in the slide
 # <div class="slide__bg" style="background-image:url('data:image/png;base64,${TITLE_IMG}')"></div>
 
 # Clean up
-rm /tmp/ve-slide-title.png
+rm /tmp/hc-slide-title.png
 ```
 
 **Prompt craft for slides:** Be specific about style, dominant colors, and mood. Pull colors from the preset's CSS variables. Examples:
