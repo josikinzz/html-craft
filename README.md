@@ -2,7 +2,7 @@
 
 HTML Craft is an agent skill. It writes self-contained HTML pages and opens them in your browser. Each page is one file that holds its own styles, data, and scripts.
 
-A page is a working surface, not a report. It keeps you in the loop on your own work in two ways.
+A page is a working surface, not a report. It keeps you in the loop on your own work in two ways. The conversation adds a third.
 
 ## Check
 
@@ -25,6 +25,10 @@ The page gives you a handle on each open decision:
 Timing controls the value of this. A page that arrives after the work can only be checked. The same page at a decision point changes the result.
 
 Any page that asks you to approve or pick must let you reject the framing. Free-text notes are always present. Every choice set carries an escape. An untouched field exports as unanswered, never as agreement.
+
+## Ask
+
+When a plan holds a decision that only you can make, the agent asks before it builds. It uses the structured question tool when the harness has one, with distinct options and a marked recommendation with its reason. It bundles the open questions into one call. It decides matters of craft — fonts, colors, layout — on its own, and most sessions need no questions at all.
 
 ## Lineage
 

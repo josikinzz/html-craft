@@ -38,6 +38,8 @@ Follow the html-craft skill workflow. Read the reference template, CSS patterns,
 - Every assumption about the codebase that the plan relies on
 Verify each against the code. If something cannot be verified, mark it as uncertain. This fact sheet is your source of truth during HTML generation.
 
+Sort the uncertain items before generating. A fact you failed to verify stays marked uncertain on the page. A decision only the user can make — scope, a tradeoff, which behavior is wanted — is a **fork**: ask it now, per "Ask" in the skill's SKILL.md, because a guess baked into the plan reads as a decision.
+
 ## Page voice
 
 The copy on the page follows the skill's page voice (full rules in SKILL.md). The essentials:
