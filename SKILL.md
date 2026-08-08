@@ -43,6 +43,10 @@ Prompt templates in `./commands/`, invoked as slash commands namespaced by harne
 
 ## Workflow
 
+Paths beginning `./` resolve against this skill's own directory, wherever it is installed. Never assume a fixed install location.
+
+**Scale the process to the page.** Read the references each time rather than working from memory — but read in proportion. A quick single-table or single-section page needs only: the chosen aesthetic's recipe in `./references/aesthetics.md`, `./references/anti-patterns.md`, the content type's template, and the "Contrast Contract" and "Spatial Scale" sections of `./references/css-patterns.md`. A multi-section page adds `./references/structures.md` and the reference for each feature it uses (Mermaid, tools, slides, doc browser, section nav). When a step cites a named section of a file, read that section, not the whole file.
+
 ### 1. Think (5 seconds, not 5 minutes)
 
 Commit to a direction before writing HTML.
@@ -57,7 +61,7 @@ Commit to a direction before writing HTML.
 
 **Who is looking?** A developer understanding a system, a PM seeing the big picture, a team reviewing a proposal — this sets information density and visual complexity.
 
-**What aesthetic?** Pick one and commit, then read its full recipe in `./references/aesthetics.md` before writing any CSS — the recipe's specific requirements are what block generic output.
+**What aesthetic?** Pick one and commit, then read its full recipe in `./references/aesthetics.md` before writing any CSS — the recipe's specific requirements are what block generic output. The menu below exists only for choosing; the recipe is the source of truth wherever the two differ.
 
 **Constrained aesthetics (prefer these):** Blueprint (technical drawing, slate/blue, monospace labels) · Editorial (expressive serif, generous whitespace) · Paper/ink (warm cream, terracotta/sage, informal) · Monochrome terminal (green/amber on near-black) · Engraved ledger (formal document-of-record, ivory + oxblood) · Risograph zine (two spot inks, playful print) · Field guide (naturalist specimen plate, keyed figures).
 
@@ -65,7 +69,13 @@ Commit to a direction before writing HTML.
 
 Fonts, colors, and aesthetics have hard exclusions — read `./references/anti-patterns.md` before committing a pairing, a palette, or a direction.
 
-Vary the choice each time — and vary *structure*, not just palette. Two pages with different colors but the same label recipe and card grammar still read as siblings from the same generator. Rotate the structural grammar too: labeling voice (mono tabs / small-caps / serif italic) and composition (card grid / swimlanes / annotation rail). If the last diagram was dark and technical, make the next one light and editorial.
+Vary the choice each time — and vary *structure*, not just palette. Two pages with different colors but the same label recipe and card grammar still read as siblings from the same generator. Rotate the structural grammar too: labeling voice (mono tabs / small-caps / serif italic) and composition (card grid / swimlanes / annotation rail). Recent choices are recorded, not remembered: every delivered page carries an `hc-stamp` comment (Deliver step). Check what came before —
+
+```bash
+grep -h 'hc-stamp' $(ls -t ~/.agent/diagrams/*.html 2>/dev/null | head -3)
+```
+
+— and pick an aesthetic, font pairing, and composition that none of the last three pages used. If the directory is empty or the stamps are absent, choose freely.
 
 **Done when:** you can state, in one sentence each, the audience, the aesthetic, and the claim the reader most needs to check.
 
@@ -197,7 +207,7 @@ These rules govern the **body copy and labels** on the generated page — card t
 
 The parent agent decides what the page **says**. A subagent does the work that needs no judgment about content. If the harness supports subagents, delegate. Otherwise do the work inline.
 
-**Delegate:** the contrast script run, the render screenshot and squint check, the overflow sweep across widths, plan-tracker checkbox flips and timestamp updates, reopening the page in the browser, deployment and sharing, and the index refresh.
+**Delegate:** the contrast script run, the static sweeps (template filler, overflow protection, markup integrity, the self-contained grep), plan-tracker checkbox flips and timestamp updates, reopening the page in the browser, deployment and sharing, and the index refresh.
 
 **Keep:** reading the source material, choosing the structure and aesthetic, writing the HTML content, and fixing everything verification flags.
 
@@ -207,38 +217,47 @@ A delegated check whose report you never read is not a check — collect and rea
 
 ### 5. Verify
 
-Deliver only after every check passes.
+Deliver only after every check passes. Verification is scripts plus reading the delivered HTML — never screenshots or a live browser. The kit's patterns are what guarantee the page looks right; conformance to them is what you check.
 
-- **The contrast pass**: run `python3 ~/.claude/skills/html-craft/scripts/check-contrast.py <file.html>`. It resolves the CSS custom properties for both themes and reports every pair that misses the contrast contract in Style. It also flags hardcoded light-ink-on-accent-fill and over-intense background patterns. Fix every `FAIL`. Keep a `WARN` only with a deliberate reason. This catches what the eye does not — a 3.2:1 badge looks fine in isolation and is unreadable in context.
-- **The squint test**: blur your eyes. Hierarchy still perceptible? Sections still distinct?
-- **Look at the render**: when browser automation is available, open the file and screenshot it — run the squint test on the actual render, not your mental model of it.
-- **Text on decoration**: scan for prose sitting directly on a striped, ruled, or dot-grid background with no surface between them. If the pattern is legible as *lines* behind a sentence, it is too strong.
+**Script checks:**
+
+- **The contrast pass**: run `python3 ./scripts/check-contrast.py <file.html>` (the script lives in this skill's directory). It resolves the CSS custom properties for both themes and reports every pair that misses the contrast contract in Style. It also flags hardcoded light-ink-on-accent-fill and over-intense background patterns. Fix every `FAIL`. Keep a `WARN` only with a deliberate reason. This catches what the eye does not — a 3.2:1 badge looks fine in isolation and is unreadable in context. If the script itself cannot run (no `python3`, a crash), do not skip silently: audit every ink/fill pair by hand against the floors, and name the fallback in your reply.
+- **Single self-contained file** (see File Structure): `grep -oE '(src|href)="[^"]*"' file.html` shows only `data:` URIs and `https://` URLs.
+
+**Static checks — read the code, not a render:**
+
+- **Both themes defined**: every custom property set in `:root` is redefined in the theme media query. The contrast script validates both palettes, but a token that exists in only one theme is a defect even when the script passes.
+- **Hierarchy in code**: the type scale keeps its ≥1.25× steps, and the depth tiers (hero / flat / recessed) are actually used. A page where every card sits on the same surface at the same size has no hierarchy to perceive.
+- **Text on decoration**: no prose sits directly on a striped, ruled, or dot-grid background — every text block has an opaque `--surface` between it and the pattern, and pattern alpha respects the ceilings in Style.
+- **Overflow protection**: the rules from "Overflow Protection" in `./references/css-patterns.md` are present in the code — `min-width: 0` on grid and flex children, `overflow-wrap: break-word` on side-by-side panels, `<li>` keeping its default `display` so markers render.
 - **The swap test**: would replacing your fonts and colors with a generic dark theme make this indistinguishable from a template? If yes, push the aesthetic further.
 - **The slop test**: review the page against `./references/anti-patterns.md`. Two or more slop signals means regenerate with a different aesthetic direction.
 - **Page voice**: every body sentence passes the Page Voice specs — under the word cap, one fact, one word per concept, no empty adjectives.
 - **Checkable**: every claim about a real artifact names its source — the file:line, the command, the commit, the document. A reader who doubts a cell can find what it came from without asking you. Pages that explain a concept are exempt.
 - **Steerable**: where a decision is still open, the reader has a way to act on it — options to pick between, a status to correct, an export that carries their edit back. A page that leaves them nothing to do but agree has skipped this. Where the page asks for a decision, it also meets the full "Asking the user" contract in `./references/tool-patterns.md`.
-- **Both themes**: toggle your OS between light and dark. Both look intentional.
 - **Information completeness**: the page conveys what the user asked for. Pretty but incomplete is a failure.
-- **No overflow**: resize the browser across widths. Nothing clips or escapes its container. Every grid and flex child needs `min-width: 0`. Side-by-side panels need `overflow-wrap: break-word`. `<li>` keeps its default `display` so markers render. See Overflow Protection in `./references/css-patterns.md`.
-- **Mermaid opens fully visible**: every diagram shows its *entire* graph on load, scaled down to fit. The zoom label reads `fit` (or `capped` on a small diagram). A reading above 100% on anything but a tiny diagram means the contain-fit broke in adaptation. On slides, check that nothing runs off the bottom — there is no scrolling to recover it. If a diagram is too small to read once it fits, cut nodes or split it.
-- **Mermaid interaction**: on scrollable pages, every `.mermaid-wrap` carries the full engine — zoom controls, a non-clipping WebP export button, Ctrl/Cmd+scroll zoom, drag panning, and click-to-expand. Test the expanded tab and WebP output per the export-safety checklist in `./references/mermaid.md`. On slide decks, diagrams are click-to-expand only (see `./references/slide-patterns.md`).
+- **Mermaid conformance**: the `diagram-shell` engine is copied wholesale and unmodified from `./templates/mermaid-flowchart.html` — the contain-fit, zoom controls, WebP export, and click-to-expand all come from that verbatim copy, so an edited engine is the defect to look for. Every diagram stays under the node-count ceiling in `./references/mermaid.md`, and the export-safety checklist there is satisfied in the code. On slide decks, diagrams are click-to-expand only (see `./references/slide-patterns.md`).
 - **No template filler**: search the page for the templates' example content — names, metrics, subject matter. Every word comes from the actual subject.
-- **File opens cleanly**: no console errors, no broken font loads, no layout shifts.
-- **Single self-contained file** (see File Structure): `grep -oE '(src|href)="[^"]*"' file.html` shows only `data:` URIs and `https://` URLs.
+- **Markup integrity**: every `<style>` and `<script>` block closes, every ID the page's JS references exists in the markup, and every font family the CSS names appears in the `<link>` (with a system fallback in the stack).
 
-**Done when:** you ran every check above, and every check reports clean.
+**Done when:** every check above ran and reports clean. A check that could not run as written is named in your reply along with the fallback you used — a silently skipped check is a defect in the delivery, not the page.
 
 ### 6. Deliver
 
-**Output location:** write to `~/.agent/diagrams/` with a descriptive content-based filename: `modem-architecture.html`, `pipeline-flow.html`, `schema-overview.html`. The directory persists across sessions.
+**Output location:** write to `~/.agent/diagrams/` with a descriptive content-based filename: `modem-architecture.html`, `pipeline-flow.html`, `schema-overview.html`. The directory persists across sessions. (Note the singular `~/.agent` — the output directory, not a skills directory such as `~/.agents`.)
 
 **Stamp provenance:** end the page with a small dim footer — generation date, the git branch and short commit hash when the subject is a repository, and the key files or documents you built the page from. Explainers describe moving targets. The stamp is what makes the page auditable a week later and gives `fact-check` an anchor.
+
+Next to the footer, leave a machine-readable comment recording the design choices — this is what the Think step's variety grep reads:
+
+```html
+<!-- hc-stamp: aesthetic=blueprint fonts="Space Grotesk + IBM Plex Mono" structure=swimlanes -->
+```
 
 **Optional — embed fonts for offline/CSP hardening.** Only when the page must render with no network or on a strict-CSP host (for example, claude.ai Artifacts):
 
 ```bash
-python3 ~/.claude/skills/html-craft/scripts/embed-fonts.py ~/.agent/diagrams/filename.html
+python3 ./scripts/embed-fonts.py ~/.agent/diagrams/filename.html
 ```
 
 It fetches the Google Fonts `<link>`s, embeds the `latin`/`latin-ext` woff2 subsets as base64 `@font-face`, and strips the external `<link>`/`preconnect` tags. Pass `--subsets latin,latin-ext,cyrillic` (or `all`) for glyphs outside those subsets (for example `№` or Greek). Mermaid and Chart.js still need the network. A fully offline page avoids them.

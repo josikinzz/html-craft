@@ -22,7 +22,7 @@ Decorative-only marks (watermark numerals, oversized quote glyphs) are exempt fr
 **Verify, don't estimate:**
 
 ```bash
-python3 ~/.claude/skills/html-craft/scripts/check-contrast.py ~/.agent/diagrams/page.html
+python3 ./scripts/check-contrast.py ~/.agent/diagrams/page.html   # from the skill's directory
 ```
 
 It resolves the custom properties for both themes and reports every pair below its floor. Contrast is arithmetic — check it rather than judging it.
