@@ -47,9 +47,7 @@ The recipes below share one set of assumptions. Read them once here; each recipe
 
 ### Motion
 
-The shapes define no motion of their own: no hover state, no focus ring, no entrance animation. Motion belongs to the page, through the stagger vocabulary in `css-patterns.md`, and the shapes inherit it. A shape gains interaction styling only when it becomes genuinely interactive, and then it gains a focus state and a real hit area, never decorative hover.
-
-One collision to watch. The waterfall and zigzag recipes carry their offsets in `transform`, and the kit's `fadeUp` stagger animates `transform` too, so the animation overwrites the offset the moment both apply to the same element. Compose them instead: animate a wrapper element and offset the child, or fold the offset into the keyframe (`to { transform: translateY(var(--offset, 0)); }`).
+The shapes are static: no hover state, no focus ring, no entrance animation. The whole kit is — pages render complete and at rest, like print. A shape gains interaction styling only when it becomes genuinely interactive, and then it gains a focus state and a real hit area, never decorative hover.
 
 ## Structure recipes
 
@@ -241,7 +239,7 @@ Peer items, offset so the eye moves rather than scanning a ruled grid.
 @media (max-width: 768px) { .waterfall > * { transform: none; } }
 ```
 
-Caveats: `transform` does not affect layout, so the last row's offset items hang past the container — the `padding-bottom: 32px` above clears the deepest offset. Kill the offsets in one column, where they read as misalignment. Read the collision note in Motion before adding page stagger to these items.
+Caveats: `transform` does not affect layout, so the last row's offset items hang past the container — the `padding-bottom: 32px` above clears the deepest offset. Kill the offsets in one column, where they read as misalignment.
 
 ### Zigzag steps
 
@@ -279,7 +277,7 @@ Alternating sides, one step per row, index in the gutter.
 }
 ```
 
-Caveats: a CSS counter draws the number but leaves it out of the DOM, where assistive technology cannot reach it. Build the sequence as an `<ol>`, or carry the number as `data-step` and print it with `content: attr(data-step)`. Right-aligned text is hard to read past two lines, so keep the left column short, or set `text-align: left` on both sides and let the spine alone carry the alternation. The bead centers on the step's box, so a two-line step and a six-line step put their beads at different distances from the row above — give adjacent steps similar length, or pin the bead to the first line with `top: 24px` instead. Read the collision note in Motion before adding page stagger to these steps.
+Caveats: a CSS counter draws the number but leaves it out of the DOM, where assistive technology cannot reach it. Build the sequence as an `<ol>`, or carry the number as `data-step` and print it with `content: attr(data-step)`. Right-aligned text is hard to read past two lines, so keep the left column short, or set `text-align: left` on both sides and let the spine alone carry the alternation. The bead centers on the step's box, so a two-line step and a six-line step put their beads at different distances from the row above — give adjacent steps similar length, or pin the bead to the first line with `top: 24px` instead.
 
 ### Binary compare with center spine
 

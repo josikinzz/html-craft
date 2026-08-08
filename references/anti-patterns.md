@@ -46,12 +46,13 @@ Unreadable is worse than ugly. A page that looks striking in a screenshot and ca
 
 ## Motion
 
-**Forbidden animations:**
+**Forbidden:**
+- Entrance animations of any kind — staggered fade-ins, reveals, draw-ins, count-ups
 - Animated glowing box-shadows (`@keyframes glow { box-shadow: 0 0 20px... }`)
-- Pulsing/breathing effects on static content
-- Continuous animations that run after page load (except progress indicators)
+- Pulsing/breathing effects and continuous animations that run after page load
+- Decorative hover effects on non-interactive elements (card lift, scale-on-hover)
 
-**Instead:** motion fires once on entrance, on hover, or on a user action, then rests.
+**Instead:** the page renders complete and at rest, like print. A transition appears only as feedback on a genuinely interactive control (button, row, input, `<details>`), and stays under 0.2s.
 
 ## Section Headers
 

@@ -13,7 +13,7 @@
   - All 10 slide types in a cohesive narrative
   - SlideEngine JS: keyboard/touch/wheel nav, progress bar, dots, counter, hints,
     #N deep links; boots independently of the Mermaid CDN
-  - Cinematic transitions: fade + translateY + scale, staggered child reveals
+  - No entrance transitions or reveals: slides render complete and at rest
   - Per-slide background variation (gradient direction, accent glow position)
   - Decorative SVG accents (corner marks, quote mark, divider)
   - Typography scale: 120px display → 48px heading → 22px body → 14px label
@@ -114,42 +114,12 @@
     justify-content: center;
     padding: clamp(40px, 6vh, 80px) clamp(40px, 8vw, 120px);
     isolation: isolate;
-    opacity: 0;
-    transform: translateY(40px) scale(0.98);
-    transition:
-      opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-      transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .slide.visible {
-    opacity: 1;
-    transform: none;
-  }
-
-  .slide .reveal {
-    opacity: 0;
-    transform: translateY(20px);
-    transition:
-      opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-      transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  /* Stagger by --i set on each .reveal in the markup — not nth-child, which
-     counts every sibling (a decorative SVG, an un-revealed wrapper all consume
-     positions) and stops at whatever number the ladder was typed out to: the
-     7th reveal pops in at 0s while the 6th is still easing. */
-  .slide.visible .reveal {
-    opacity: 1;
-    transform: none;
-    transition-delay: calc(0.1s + var(--i, 0) * 0.1s);
-  }
-
+  /* No entrance transitions, no scroll-triggered reveals — slides render
+     complete and at rest. Transitions below belong to nav chrome only. */
   @media (prefers-reduced-motion: reduce) {
-    .slide, .slide .reveal {
-      opacity: 1 !important;
-      transform: none !important;
-      transition: none !important;
-    }
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
   }
 
   /* ============ NAV CHROME ============ */
@@ -664,11 +634,11 @@
       <line x1="0" y1="80" x2="0" y2="120" stroke="var(--accent)" stroke-width="2" opacity="0.15"/>
       <line x1="0" y1="120" x2="40" y2="120" stroke="var(--accent)" stroke-width="2" opacity="0.15"/>
     </svg>
-    <div class="reveal" style="--i:0">
+    <div>
       <p class="slide__subtitle" style="margin-bottom:clamp(16px,2vh,32px);">Engineering Review &mdash; Q1 2026</p>
     </div>
-    <h1 class="slide__display reveal" style="--i:1">API Gateway Redesign</h1>
-    <div class="reveal" style="--i:2">
+    <h1 class="slide__display">API Gateway Redesign</h1>
+    <div>
       <p class="slide__subtitle" style="margin-top:clamp(16px,2vh,32px);">From monolith proxy to edge-native routing</p>
     </div>
   </section>
@@ -677,8 +647,8 @@
   <section class="slide slide--divider" style="background-image:radial-gradient(ellipse at 80% 60%, var(--accent-dim) 0%, transparent 40%);">
     <span class="slide__number">01</span>
     <div>
-      <h2 class="slide__heading reveal" style="--i:0">The Problem</h2>
-      <p class="slide__subtitle reveal" style="--i:1; margin-top:12px;">Why the current gateway can't scale</p>
+      <h2 class="slide__heading">The Problem</h2>
+      <p class="slide__subtitle" style="margin-top:12px;">Why the current gateway can't scale</p>
     </div>
   </section>
 
@@ -686,16 +656,16 @@
   <section class="slide slide--content" style="background-image:radial-gradient(ellipse at 20% 80%, var(--accent-dim) 0%, transparent 45%);">
     <div class="slide__inner">
       <div>
-        <p class="slide__label reveal" style="--i:0">Current State</p>
-        <h2 class="slide__heading reveal" style="--i:1">Single Point of Failure</h2>
+        <p class="slide__label">Current State</p>
+        <h2 class="slide__heading">Single Point of Failure</h2>
         <ul class="slide__bullets">
-          <li class="reveal" style="--i:0">All traffic routes through one Node.js process</li>
-          <li class="reveal" style="--i:1">Rate limiting is per-instance, not distributed</li>
-          <li class="reveal" style="--i:2">Auth validation adds 40ms per request</li>
-          <li class="reveal" style="--i:3">No circuit breaking: cascade failures hit everything</li>
+          <li>All traffic routes through one Node.js process</li>
+          <li>Rate limiting is per-instance, not distributed</li>
+          <li>Auth validation adds 40ms per request</li>
+          <li>No circuit breaking: cascade failures hit everything</li>
         </ul>
       </div>
-      <div class="slide__aside reveal" style="--i:1">
+      <div class="slide__aside">
         <svg viewBox="0 0 160 160" width="160" height="160">
           <circle cx="80" cy="80" r="60" fill="none" stroke="var(--red)" stroke-width="2" opacity="0.3"/>
           <circle cx="80" cy="80" r="40" fill="none" stroke="var(--red)" stroke-width="1.5" opacity="0.2" stroke-dasharray="4 4"/>
@@ -710,23 +680,23 @@
   <section class="slide slide--split">
     <div class="slide__panels">
       <div class="slide__panel slide__panel--primary">
-        <p class="slide__label reveal" style="--i:0; color:var(--red);">Before</p>
-        <h2 class="slide__heading reveal" style="--i:1; font-size:clamp(22px,3.5vw,36px);">Monolith Proxy</h2>
+        <p class="slide__label" style="color:var(--red);">Before</p>
+        <h2 class="slide__heading" style="font-size:clamp(22px,3.5vw,36px);">Monolith Proxy</h2>
         <ul class="slide__bullets" style="margin-top:16px;">
-          <li class="reveal" style="--i:0">Express.js middleware chain</li>
-          <li class="reveal" style="--i:1">In-memory rate limit counters</li>
-          <li class="reveal" style="--i:2">Synchronous JWT validation</li>
-          <li class="reveal" style="--i:3">Manual upstream health checks</li>
+          <li>Express.js middleware chain</li>
+          <li>In-memory rate limit counters</li>
+          <li>Synchronous JWT validation</li>
+          <li>Manual upstream health checks</li>
         </ul>
       </div>
       <div class="slide__panel slide__panel--secondary">
-        <p class="slide__label reveal" style="--i:0; color:var(--green);">After</p>
-        <h2 class="slide__heading reveal" style="--i:1; font-size:clamp(22px,3.5vw,36px);">Edge-Native</h2>
+        <p class="slide__label" style="color:var(--green);">After</p>
+        <h2 class="slide__heading" style="font-size:clamp(22px,3.5vw,36px);">Edge-Native</h2>
         <ul class="slide__bullets" style="margin-top:16px;">
-          <li class="reveal" style="--i:0">Cloudflare Workers at the edge</li>
-          <li class="reveal" style="--i:1">Durable Objects for distributed state</li>
-          <li class="reveal" style="--i:2">Async JWT with key caching</li>
-          <li class="reveal" style="--i:3">Automatic circuit breakers</li>
+          <li>Cloudflare Workers at the edge</li>
+          <li>Durable Objects for distributed state</li>
+          <li>Async JWT with key caching</li>
+          <li>Automatic circuit breakers</li>
         </ul>
       </div>
     </div>
@@ -736,15 +706,15 @@
   <section class="slide slide--divider" style="background-image:radial-gradient(ellipse at 30% 40%, var(--accent-dim) 0%, transparent 40%);">
     <span class="slide__number">02</span>
     <div>
-      <h2 class="slide__heading reveal" style="--i:0">Architecture</h2>
-      <p class="slide__subtitle reveal" style="--i:1; margin-top:12px;">How the new system works</p>
+      <h2 class="slide__heading">Architecture</h2>
+      <p class="slide__subtitle" style="margin-top:12px;">How the new system works</p>
     </div>
   </section>
 
   <!-- SLIDE 6: DIAGRAM -->
   <section class="slide slide--diagram">
-    <h2 class="slide__heading reveal" style="--i:0">Request Flow</h2>
-    <div class="mermaid-wrap reveal" style="--i:1">
+    <h2 class="slide__heading">Request Flow</h2>
+    <div class="mermaid-wrap">
       <div class="zoom-controls">
         <button onclick="openDiagramFullscreen(this)" title="Open full size in new tab" aria-label="Open full size in new tab">&#x26F6;</button>
       </div>
@@ -771,13 +741,13 @@ graph LR
 
   <!-- SLIDE 7: DASHBOARD -->
   <section class="slide slide--dashboard" style="background-image:radial-gradient(ellipse at 70% 30%, var(--accent-dim) 0%, transparent 40%);">
-    <h2 class="slide__heading reveal" style="--i:0">Performance Impact</h2>
+    <h2 class="slide__heading">Performance Impact</h2>
     <!-- One dominant figure, supporting metrics inline in prose — not a uniform KPI card grid -->
-    <div class="reveal" style="--i:1; margin-top:clamp(20px,5vh,56px);">
+    <div style="margin-top:clamp(20px,5vh,56px);">
       <div class="slide__kpi-val" style="color:var(--accent); font-size:clamp(80px,15vw,180px); line-height:0.95;">12ms</div>
       <div class="slide__kpi-label" style="margin-top:8px;">P99 latency, down from 142ms</div>
     </div>
-    <p class="slide__subtitle reveal" style="--i:2; margin-top:clamp(24px,5vh,48px); max-width:56ch;">
+    <p class="slide__subtitle" style="margin-top:clamp(24px,5vh,48px); max-width:56ch;">
       Uptime rose from 99.2% to <strong style="color:var(--green);">99.97%</strong> across
       <strong>340</strong> edge locations, at <strong style="color:var(--accent);">$0.02</strong>
       per 10K requests: a 68% cost reduction.
@@ -786,8 +756,8 @@ graph LR
 
   <!-- SLIDE 8: TABLE -->
   <section class="slide slide--table">
-    <h2 class="slide__heading reveal" style="--i:0">Migration Phases</h2>
-    <div class="table-wrap reveal" style="--i:1; flex:1; min-height:0; margin-top:clamp(8px,1.5vh,20px);">
+    <h2 class="slide__heading">Migration Phases</h2>
+    <div class="table-wrap" style="flex:1; min-height:0; margin-top:clamp(8px,1.5vh,20px);">
       <div class="table-scroll">
         <table class="data-table">
           <thead><tr><th scope="col">Phase</th><th scope="col">Scope</th><th scope="col">Timeline</th><th scope="col">Risk</th></tr></thead>
@@ -805,8 +775,8 @@ graph LR
 
   <!-- SLIDE 9: CODE -->
   <section class="slide slide--code" style="background-image:radial-gradient(ellipse at 50% 80%, var(--accent-dim) 0%, transparent 40%);">
-    <h2 class="slide__heading reveal" style="--i:0; text-align:center;">Edge Worker Entry Point</h2>
-    <div class="slide__code-block reveal" style="--i:1; margin-top:clamp(12px,2vh,24px);">
+    <h2 class="slide__heading" style="text-align:center;">Edge Worker Entry Point</h2>
+    <div class="slide__code-block" style="margin-top:clamp(12px,2vh,24px);">
       <span class="slide__code-filename">gateway.ts</span>
       <pre><code><span class="hl">export default</span> {
   <span class="hl">async fetch</span>(req: Request, env: Env) {
@@ -824,11 +794,11 @@ graph LR
 
   <!-- SLIDE 10: QUOTE -->
   <section class="slide slide--quote" style="background-image:radial-gradient(ellipse at 50% 50%, var(--accent-dim) 0%, transparent 35%);">
-    <div class="slide__quote-mark reveal" style="--i:0">&ldquo;</div>
-    <blockquote class="reveal" style="--i:1">
+    <div class="slide__quote-mark">&ldquo;</div>
+    <blockquote>
       The fastest request is the one that never leaves the edge.
     </blockquote>
-    <cite class="reveal" style="--i:2">&mdash; Edge Computing Principle</cite>
+    <cite>&mdash; Edge Computing Principle</cite>
   </section>
 
   <!-- SLIDE 11: FULL-BLEED -->
@@ -839,9 +809,9 @@ graph LR
       <!-- No inline color overrides: the .slide--bleed rules already set the
            ink at a tested alpha. Inline 0.6-alpha white is how bleed slides
            quietly drop under 4.5:1. -->
-      <p class="slide__label reveal" style="--i:0">Next Steps</p>
-      <h2 class="slide__heading reveal" style="--i:1">Ship Shadow Mode This Week</h2>
-      <p class="slide__subtitle reveal" style="--i:2; margin-top:12px;">Full cutover targeted for end of Q1</p>
+      <p class="slide__label">Next Steps</p>
+      <h2 class="slide__heading">Ship Shadow Mode This Week</h2>
+      <p class="slide__subtitle" style="margin-top:12px;">Full cutover targeted for end of Q1</p>
     </div>
   </section>
 
@@ -992,7 +962,7 @@ graph LR
   };
   SlideEngine.prototype.observe=function(){
     var self=this;
-    var obs=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add('visible');self.current=self.slides.indexOf(entry.target);self.update();}});},{threshold:0.5});
+    var obs=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){self.current=self.slides.indexOf(entry.target);self.update();}});},{threshold:0.5});
     this.slides.forEach(function(s){obs.observe(s);});
   };
   // Chrome and Safari animate behavior:'smooth' whatever the motion preference

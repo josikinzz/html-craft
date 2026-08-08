@@ -21,8 +21,8 @@
   - Status indicator badges as styled spans (never emoji)
   - tabular-nums, text wrapping in wide columns, code refs in cells
   - Summary footer row with aggregate status
-  - No entrance animation: content renders immediately (deliberate —
-    the fadeUp stagger is shared DNA with sibling templates)
+  - No entrance animation: content renders immediately (kit-wide rule —
+    pages are static and print-like)
   - Both light and dark themes via prefers-color-scheme
   - Responsive horizontal scroll wrapper
 -->
@@ -98,19 +98,10 @@
     font-family: var(--font-sans);
     padding: 48px;
     min-height: 100vh;
-    /* One quiet fade on the whole page; nothing staggers. */
-    animation: pageIn 0.4s ease-out both;
-  }
-
-  @keyframes pageIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
   }
 
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
-      animation-duration: 0.01ms !important;
-      animation-delay: 0ms !important;
       transition-duration: 0.01ms !important;
     }
   }

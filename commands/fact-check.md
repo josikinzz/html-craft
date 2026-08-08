@@ -39,7 +39,7 @@ Classify each claim:
 - Fix incorrect numbers, function names, file paths, behavior descriptions
 - Fix before/after swaps (a common error class in review pages)
 - If a section is fundamentally wrong (not just a detail error), rewrite that section's content while preserving the surrounding structure
-- For HTML: preserve layout, CSS, animations, Mermaid diagrams (unless they contain factual errors in node labels or edge descriptions)
+- For HTML: preserve layout, CSS, Mermaid diagrams (unless they contain factual errors in node labels or edge descriptions)
 - For markdown: preserve heading structure, formatting, and document organization
 
 **Phase 4: Add verification summary.**

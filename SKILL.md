@@ -65,7 +65,7 @@ Commit to a direction before writing HTML.
 
 Fonts, colors, and aesthetics have hard exclusions — read `./references/anti-patterns.md` before committing a pairing, a palette, or a direction.
 
-Vary the choice each time — and vary *structure*, not just palette. Two pages with different colors but the same stagger animation, label recipe, and card grammar still read as siblings from the same generator. Rotate the structural grammar too: labeling voice (mono tabs / small-caps / serif italic), motion (staggered reveals on one page, deliberately motionless the next), and composition (card grid / swimlanes / annotation rail). If the last diagram was dark and technical, make the next one light and editorial.
+Vary the choice each time — and vary *structure*, not just palette. Two pages with different colors but the same label recipe and card grammar still read as siblings from the same generator. Rotate the structural grammar too: labeling voice (mono tabs / small-caps / serif italic) and composition (card grid / swimlanes / annotation rail). If the last diagram was dark and technical, make the next one light and editorial.
 
 **Done when:** you can state, in one sentence each, the audience, the aesthetic, and the claim the reader most needs to check.
 
@@ -176,7 +176,7 @@ Put your primary aesthetic in `:root` and the alternate in the media query:
 
 **Surface depth creates hierarchy.** Vary card depth to signal what matters: hero sections elevated with accent-tinted backgrounds (`hc-card--hero`), body content flat (default `.hc-card`), code blocks recessed (`hc-card--recessed`). See the depth tiers in `./references/css-patterns.md`. When everything pops, nothing does.
 
-**Animation earns its place.** Staggered fade-ins on page load guide the eye through the hierarchy and are almost always worth it. Mix animation types by role: `fadeUp` for cards, `fadeScale` for KPIs and badges, `drawIn` for SVG connectors, `countUp` for hero numbers. Hover transitions on interactive-feeling elements make the page feel alive. Always respect `prefers-reduced-motion`. CSS handles most cases. For orchestrated multi-element sequences, anime.js via CDN is available (see `./references/libraries.md`). Motion fires on entrance, hover, or a user action, then rests — the forbidden motion patterns are in `./references/anti-patterns.md`.
+**Pages are static.** The page renders complete and at rest, like print — no entrance animations, no staggered reveals, no count-ups, no decorative hover. A transition appears only as feedback on a genuinely interactive control (button, row, input, `<details>`), stays under 0.2s, and moves nothing that carries layout. The forbidden motion patterns are in `./references/anti-patterns.md`.
 
 #### Page Voice
 
@@ -278,7 +278,7 @@ Every page is a **single self-contained `.html` file** — one file that can be 
 </head>
 <body>
   <!-- Semantic HTML: sections, headings, lists, tables, inline SVG -->
-  <!-- Optional: <script> for Mermaid, Chart.js, or anime.js when used -->
+  <!-- Optional: <script> for Mermaid or Chart.js when used -->
 </body>
 </html>
 ```

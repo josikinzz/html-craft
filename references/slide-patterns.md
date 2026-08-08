@@ -124,61 +124,6 @@ Slide typography is 2–3× larger than scrollable pages. Page-sized text on a v
 | Quotes | 24–48px | `4vw` preferred, serif italic |
 | Labels / captions | 10–14px | Mono, uppercase, dimmed |
 
-## Cinematic Transitions
-
-IntersectionObserver adds `.visible` when a slide enters the viewport. Slides animate in once and stay visible when scrolling back.
-
-```css
-/* Slide entrance — fade + lift + subtle scale */
-.slide {
-  opacity: 0;
-  transform: translateY(40px) scale(0.98);
-  transition:
-    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.slide.visible {
-  opacity: 1;
-  transform: none;
-}
-
-/* Staggered child reveals — add .reveal to each content element */
-.slide .reveal {
-  opacity: 0;
-  transform: translateY(20px);
-  transition:
-    opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.slide.visible .reveal {
-  opacity: 1;
-  transform: none;
-}
-
-/* Stagger delays — set --i on each .reveal in the HTML: 0, 1, 2, …
-   Not nth-child: it counts every sibling (a heading, a decorative SVG, an
-   un-revealed wrapper all consume positions), and a hand-written ladder stops
-   at whatever number you typed — the 7th item then pops in at 0s while the
-   6th is still easing. The custom property has no ceiling and doesn't care
-   what sits between the revealed elements. */
-.slide.visible .reveal {
-  transition-delay: calc(0.1s + var(--i, 0) * 0.1s);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .slide,
-  .slide .reveal {
-    opacity: 1 !important;
-    transform: none !important;
-    transition: none !important;
-  }
-}
-```
-
-Number the reveals inline, restarting at 0 on each slide — `<li class="reveal" style="--i:0">`, `--i:1`, and so on. A `.reveal` without `--i` still animates; it just lands in the first wave.
-
 ## Navigation Chrome
 
 All navigation is `position: fixed` with high z-index, layered above slides. Styled to be visible on any background.
@@ -313,7 +258,7 @@ For decks where some slides are light and some dark (especially full-bleed slide
 
 ## SlideEngine JavaScript
 
-The complete SlideEngine — navigation, chrome, scroll-triggered reveals, deep links — lives in `templates/slide-deck.html`. **Copy it wholesale**; it is the single source of truth for this engine. Do not retype it from memory or rebuild it from this summary.
+The complete SlideEngine — navigation, chrome, deep links — lives in `templates/slide-deck.html`. **Copy it wholesale**; it is the single source of truth for this engine. Do not retype it from memory or rebuild it from this summary.
 
 Rules the implementation embodies (verify these survive your adaptation):
 
@@ -330,7 +275,7 @@ Rules the implementation embodies (verify these survive your adaptation):
 
   Same guard on every other scripted scroll in the deck. Reading it inside the handler rather than once at boot means a mid-session preference flip is honored.
 - **Hints dim, never vanish:** after the 4s timer or first keypress, `.deck-hints.faded` drops to low opacity — first-time viewers can still find it.
-- **IntersectionObserver at `threshold: 0.5`** both marks slides `.visible` (triggering reveals) and tracks the current index — one observer, two jobs.
+- **IntersectionObserver at `threshold: 0.5`** tracks the current slide index for the dots, counter, and URL hash. Slides render complete and at rest — there is no entrance transition and no scroll-triggered reveal.
 
 ## Auto-Fit
 
@@ -392,9 +337,9 @@ Full-viewport hero. Background treatment via gradient, texture, or surf-generate
 ```html
 <section class="slide slide--title">
   <svg class="slide__decor" ...><!-- optional decorative accent --></svg>
-  <div class="slide__content reveal">
+  <div class="slide__content">
     <h1 class="slide__display">Deck Title</h1>
-    <p class="slide__subtitle reveal">Subtitle or date</p>
+    <p class="slide__subtitle">Subtitle or date</p>
   </div>
 </section>
 ```
@@ -415,8 +360,8 @@ Oversized decorative number (200px+, ultra-light weight) with heading. Breathing
 <section class="slide slide--divider">
   <span class="slide__number">02</span>
   <div class="slide__content">
-    <h2 class="slide__heading reveal">Section Title</h2>
-    <p class="slide__subtitle reveal">Optional subheading</p>
+    <h2 class="slide__heading">Section Title</h2>
+    <p class="slide__subtitle">Optional subheading</p>
   </div>
 </section>
 ```
@@ -448,13 +393,13 @@ Heading + bullets or paragraphs. Asymmetric layout — content offset to one sid
 <section class="slide slide--content">
   <div class="slide__inner">
     <div class="slide__text">
-      <h2 class="slide__heading reveal">Heading</h2>
+      <h2 class="slide__heading">Heading</h2>
       <ul class="slide__bullets">
-        <li class="reveal" style="--i:0">First point</li>
-        <li class="reveal" style="--i:1">Second point</li>
+        <li>First point</li>
+        <li>Second point</li>
       </ul>
     </div>
-    <div class="slide__aside reveal">
+    <div class="slide__aside">
       <!-- optional: illustration, icon, mini-diagram, accent SVG -->
     </div>
   </div>
@@ -527,8 +472,8 @@ Asymmetric two-panel (60/40 or 70/30). Before/after, text+diagram, text+image. E
 <section class="slide slide--split">
   <div class="slide__panels">
     <div class="slide__panel slide__panel--primary">
-      <h2 class="slide__heading reveal">Left Panel</h2>
-      <div class="slide__body reveal">Content...</div>
+      <h2 class="slide__heading">Left Panel</h2>
+      <div class="slide__body">Content...</div>
     </div>
     <div class="slide__panel slide__panel--secondary">
       <!-- diagram, image, code block, or contrasting content -->
@@ -582,8 +527,8 @@ Full-viewport Mermaid diagram. Max 8–10 nodes (presentation scale — fewer, l
 
 ```html
 <section class="slide slide--diagram">
-  <h2 class="slide__heading reveal">Diagram Title</h2>
-  <div class="mermaid-wrap reveal" style="flex:1; min-height:0;">
+  <h2 class="slide__heading">Diagram Title</h2>
+  <div class="mermaid-wrap" style="flex:1; min-height:0;">
     <div class="zoom-controls">
       <button onclick="openDiagramFullscreen(this)" title="Open full size in new tab" aria-label="Open full size in new tab">&#x26F6;</button>
     </div>
@@ -666,9 +611,9 @@ For simple linear flows (build steps, deployment stages, data pipelines) where M
 
 ```html
 <section class="slide" style="background-image:radial-gradient(...);">
-  <p class="slide__label reveal">Pipeline Label</p>
-  <h2 class="slide__heading reveal">Pipeline Title</h2>
-  <div class="pipeline reveal">
+  <p class="slide__label">Pipeline Label</p>
+  <h2 class="slide__heading">Pipeline Title</h2>
+  <div class="pipeline">
     <div class="pipeline__step" style="border-top-color:var(--accent);">
       <div class="pipeline__num">01</div>
       <div class="pipeline__name">Step Name</div>
@@ -771,9 +716,9 @@ KPI cards at presentation scale (48–64px hero numbers). Mini-charts via Chart.
 
 ```html
 <section class="slide slide--dashboard">
-  <h2 class="slide__heading reveal">Metrics Overview</h2>
+  <h2 class="slide__heading">Metrics Overview</h2>
   <div class="slide__kpis">
-    <div class="slide__kpi reveal">
+    <div class="slide__kpi">
       <div class="slide__kpi-val" style="color:var(--accent)">247</div>
       <div class="slide__kpi-label">Lines Added</div>
     </div>
@@ -826,8 +771,8 @@ KPI cards at presentation scale (48–64px hero numbers). Mini-charts via Chart.
 
 ```html
 <section class="slide slide--table">
-  <h2 class="slide__heading reveal">Data Title</h2>
-  <div class="table-wrap reveal" style="flex:1; min-height:0;">
+  <h2 class="slide__heading">Data Title</h2>
+  <div class="table-wrap" style="flex:1; min-height:0;">
     <div class="table-scroll">
       <table class="data-table"> ... </table>
     </div>
@@ -860,8 +805,8 @@ KPI cards at presentation scale (48–64px hero numbers). Mini-charts via Chart.
 
 ```html
 <section class="slide slide--code">
-  <h2 class="slide__heading reveal">What Changed</h2>
-  <div class="slide__code-block reveal">
+  <h2 class="slide__heading">What Changed</h2>
+  <div class="slide__code-block">
     <span class="slide__code-filename">worker.ts</span>
     <pre><code>function processQueue(items) {
   // highlighted code here
@@ -920,11 +865,11 @@ KPI cards at presentation scale (48–64px hero numbers). Mini-charts via Chart.
 
 ```html
 <section class="slide slide--quote">
-  <div class="slide__quote-mark reveal">&ldquo;</div>
-  <blockquote class="reveal">
+  <div class="slide__quote-mark">&ldquo;</div>
+  <blockquote>
     The best code is the code you don't have to write.
   </blockquote>
-  <cite class="reveal">&mdash; Someone Wise</cite>
+  <cite>&mdash; Someone Wise</cite>
 </section>
 ```
 
@@ -984,8 +929,8 @@ Background image (surf-generated or CSS gradient) dominates the viewport. Text o
   <div class="slide__bg" style="background-image:url('data:image/png;base64,...')"></div>
   <div class="slide__scrim"></div>
   <div class="slide__content">
-    <h2 class="slide__heading reveal">Headline Over Image</h2>
-    <p class="slide__subtitle reveal">Supporting text</p>
+    <h2 class="slide__heading">Headline Over Image</h2>
+    <p class="slide__subtitle">Supporting text</p>
   </div>
 </section>
 ```
