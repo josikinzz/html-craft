@@ -3,7 +3,7 @@ description: Generate a throwaway single-file HTML tool — triage board, config
 ---
 Load the html-craft skill, then build a purpose-built interactive tool as a single self-contained HTML page for the data and job the user points at.
 
-Follow the html-craft skill workflow. Read `../references/tool-patterns.md` before making any structural choice, plus `../references/css-patterns.md` (especially "Interactive Controls") and the skill's Style and Anti-Patterns sections. Follow the impeccable skill's frontend craft (accessibility, responsiveness, deliberate component quality) within this skill's aesthetic constraints.
+Follow the html-craft skill workflow. Read `../references/tool-patterns.md` before making any structural choice, plus `../references/css-patterns.md` (especially "Interactive Controls"), the skill's Style step, and `../references/anti-patterns.md`. Follow the impeccable skill's frontend craft (accessibility, responsiveness, deliberate component quality) within this skill's aesthetic constraints.
 
 **Ingestion** — `$1` names the data (a file, a Linear/GitHub query, a config, a transcript) and the job (reorder, edit, tune, curate, annotate, pick); ask only if neither is identifiable from arguments or conversation:
 

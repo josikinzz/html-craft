@@ -61,10 +61,11 @@ Include a section only when the plan has real content for it; the sections below
 3. **Task ledger** — the tracker, placed directly after The Problem so it is visible on load. It carries:
    - A progress line: a count ("4 of 9 done") and a bar whose width is that fraction.
    - A **last updated** stamp, in local time, next to the count.
-   - One row per task: checkbox mark, id, title, its completion criterion, and a status pill reading Todo, Doing, Done, or Blocked.
+   - One row per task: a working check-off control, id, title, its completion criterion, and a status pill reading Todo, Doing, Done, or Blocked.
    - Blocked rows state the blocker in one sentence. Dropped rows state why they were dropped.
    - A per-task notes field, plus one page-level notes field under the ledger — a task the user disagrees with needs somewhere to say so. Both optional. See "Asking the user" in `../references/tool-patterns.md`.
-   *Visual treatment: elevated depth, monospace ids, `.status` pills from css-patterns.md. Full 1px tinted borders — no left-border accent stripes, no emoji; the checkmark is an inline SVG or a styled span.*
+   - A **Copy updates** button under the ledger. It exports every task's current status, every note the user typed, and the last-updated stamp as one markdown block, so the user's edits reach the agent as text. Mark each row's provenance: a status the user changed reads as user-edited, an untouched one reads as the agent's. Notes fields that reach no export are typing thrown away — the check-off and the notes both feed this button. Implementation: the export bar and clipboard snippet in "Question Blocks (Asking the User)" in `../references/css-patterns.md`.
+   *Visual treatment: elevated depth, monospace ids, `.status` pills from css-patterns.md. Full 1px tinted borders — no left-border accent stripes, no emoji; the check-off is a real control drawn in CSS, never an emoji.*
 
 4. **State Machine** — Mermaid flowchart or stateDiagram showing states and transitions. Label edges with the triggers (commands, events, conditions). *Wrap in `.mermaid-wrap` with zoom controls (+/−/reset/expand) and click-to-expand. Use `flowchart TD` instead of `stateDiagram-v2` if labels need colons or parentheses. Add an explanatory caption below the diagram.*
 
@@ -94,45 +95,92 @@ Each task row carries a stable `id` and a `data-status` of `todo`, `doing`, `don
   </div>
   <div class="ledger-bar"><span id="ledger-fill" style="width: 44%"></span></div>
 
-  <div class="task" id="task-3" data-status="done">
-    <span class="task-mark" aria-hidden="true"></span>
+  <div class="task" id="task-3" data-status="done" data-touched="false">
+    <button class="task-mark" type="button" aria-pressed="true"
+            aria-label="T3 — mark not done" data-task="task-3"></button>
     <div class="task-body">
       <p class="task-title"><span class="task-id">T3</span> Add <code>--dry-run</code> to the CLI parser</p>
       <p class="task-criterion">Done when <code>parseFlags</code> accepts <code>--dry-run</code> and <code>flags.test.ts</code> passes.</p>
+      <textarea class="note" data-note="task-3" placeholder="Notes on this task (optional)"></textarea>
     </div>
     <span class="status status--match">Done</span>
+  </div>
+
+  <label class="note-label" for="plan-notes">Notes on the plan</label>
+  <textarea class="note note--page" id="plan-notes" data-note="page"
+            placeholder="Wrong framing? Missing work? Say so here."></textarea>
+
+  <div class="export-bar">
+    <button type="button" class="btn-primary" id="export" aria-live="polite">Copy updates</button>
+    <span class="export-count" id="count" data-dirty="false">No changes yet</span>
   </div>
 </div>
 ```
 
+The check-off is a `<button>`, not a styled span: it flips `data-status` between `done` and `todo`, sets `aria-pressed`, sets `data-touched="true"` on the row, and repaints the count, the bar, and the export counter. `data-touched` is what separates a status the user set from one the agent wrote — the export reports the two differently. The `.note`, `.note--page`, `.note-label`, `.export-bar`, and `.export-count` rules, the clipboard call, and the `beforeunload` guard all come from "Question Blocks (Asking the User)" in `../references/css-patterns.md`.
+
+```js
+document.querySelectorAll('.task-mark').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const row = btn.closest('.task');
+    const done = row.dataset.status === 'done';
+    row.dataset.status = done ? 'todo' : 'done';
+    row.dataset.touched = 'true';
+    btn.setAttribute('aria-pressed', String(!done));
+    repaintLedger();          // pill text and class, count, bar width, stamp, export counter
+  });
+});
+```
+
+The exported block names the source of every line, so the agent reads the user's edits as the user's:
+
+```markdown
+## Plan updates — 5 of 9 done, 14:58 local
+- T3 Add `--dry-run` to the CLI parser: **done** (agent's status, untouched) — note: "keep the flag out of --help"
+- T4 Thread the flag through `runMigration`: **done** (you marked it done)
+- T5 Backfill the fixture set: **todo** (agent's status, untouched)
+- Plan notes: "T5 is the risky one — split it before starting."
+```
+
 ```css
-.ledger-bar { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.ledger-bar { height: 8px; border-radius: 999px; background: var(--border); overflow: hidden; }
 .ledger-bar span { display: block; height: 100%; background: var(--accent); transition: width .3s ease; }
 .ledger-stamp { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); }
 
 .task {
-  display: grid; grid-template-columns: 20px 1fr auto; gap: 12px; align-items: start;
-  padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px;
+  display: grid; grid-template-columns: 24px 1fr auto; gap: 12px; align-items: start;
+  padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px;
   background: var(--surface); min-width: 0;
 }
 .task + .task { margin-top: 8px; }
 .task-body { min-width: 0; overflow-wrap: break-word; }
 .task-id { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); margin-right: 8px; }
 .task-criterion { font-size: 12px; color: var(--text-dim); margin: 4px 0 0; }
+.task .note { margin-top: 12px; }
 
-/* The mark is a styled span — a drawn checkbox, never an emoji. */
+/* The mark is a real 24px control — a drawn checkbox on a <button>, never an emoji. */
 .task-mark {
-  width: 16px; height: 16px; margin-top: 2px; border-radius: 4px;
-  border: 1px solid var(--border-bright); display: block; position: relative;
+  width: 24px; height: 24px; padding: 0; border-radius: 6px;
+  border: 1px solid var(--border-bright); background: var(--surface);
+  display: block; position: relative; cursor: pointer;
+}
+@media (pointer: coarse) {   /* 44px touch floor — the column widens with the control */
+  .task { grid-template-columns: 44px 1fr auto; }
+  .task-mark { width: 44px; height: 44px; }
 }
 
 .task[data-status="done"] { background: color-mix(in srgb, var(--green, #15803d) 6%, var(--surface)); }
 .task[data-status="done"] .task-mark { background: var(--green, #15803d); border-color: var(--green, #15803d); }
 /* SVG-shaped tick: two borders rotated into a checkmark. */
 .task[data-status="done"] .task-mark::after {
-  content: ""; position: absolute; left: 5px; top: 1px; width: 4px; height: 9px;
-  border: solid var(--surface); border-width: 0 2px 2px 0; transform: rotate(45deg);
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: 5px; height: 11px;   /* tick geometry, not spacing — centred at either control size */
+  border: solid var(--surface); border-width: 0 2px 2px 0;
+  transform: translate(-50%, -60%) rotate(45deg);
 }
+
+/* Rows the user changed, so the export's "user-edited" claim is visible on the page. */
+.task[data-touched="true"] .task-id::after { content: ' ·edited'; color: var(--accent); }
 .task[data-status="done"] .task-title { color: var(--text-dim); }
 
 .task[data-status="doing"] { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
@@ -156,13 +204,16 @@ While a plan page exists for the current work, **the page reflects the true stat
 1. Flip that row's `data-status` to `done`, `doing`, `blocked`, or `dropped`, and swap its `.status` pill text and class.
 2. Update `#ledger-count` and the `width` on `#ledger-fill`.
 3. Update `#ledger-stamp` to the current local time.
-4. Reopen the page in the user's browser — `open <path>` on macOS, `xdg-open <path>` on Linux. The reopen is the point: it puts the real state in front of the user so they can check it.
+4. Write any notes the user handed back into the file's `<textarea>` bodies, so a reopen does not erase them — text typed into the open page lives only in that tab.
+5. Reopen the page in the user's browser — `open <path>` on macOS, `xdg-open <path>` on Linux. The reopen is the point: it puts the real state in front of the user so they can check it.
 
 Blocked tasks get `data-status="blocked"` and a one-sentence blocker. A dropped task gets `data-status="dropped"` and the reason it was dropped — the ledger records what happened, so dropped rows stay on the page.
 
 Make each update a small targeted edit to the existing file. The stable ids make every edit unambiguous; regenerating the page throws away the history the ledger exists to hold.
 
-**Completion criterion:** the turn ends with the plan page showing the same state as the work. Read the page's current `data-status` values before you finish, and reconcile any that differ.
+**Completion criterion:** the turn ends with the plan page showing the same state as the work. Before you finish, read the page's actual state back — every row's `data-status` *and* `data-touched`, every per-task `<textarea>`, and the page-level notes field — and reconcile anything that differs from what you believe. A row marked `data-touched="true"` is the user's status, not yours: do not overwrite it without saying why. Notes the user typed are input to the work, so answer them in the turn; never edit them away.
+
+When the user pastes a **Copy updates** block into the conversation, that block is the truth. Apply its statuses and notes to the file, then continue from it.
 
 **Delegate the maintenance.** Tracker upkeep is mechanical and needs no judgment about content. When the harness offers subagents, hand each update to one: give it the file path, the task ids and their new statuses, the new count, and the instruction to update the stamp and reopen the page. The parent agent stays on the actual work. Without subagents, do the update inline. Any model can run this — pick whatever the harness makes available.
 

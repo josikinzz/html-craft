@@ -13,14 +13,19 @@ Use for bar charts, line charts, pie/doughnut charts, radar charts, and other da
 ```html
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 
-<canvas id="myChart" width="600" height="300"></canvas>
+<div class="chart-container"><canvas id="myChart"></canvas></div>
 
 <script>
-  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const textColor = isDark ? '#8b949e' : '#6b7280';
-  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
-  const fontFamily = getComputedStyle(document.documentElement)
-    .getPropertyValue('--font-body').trim() || 'system-ui, sans-serif';
+  // Read the page's own tokens at runtime — the chart then follows the palette
+  // in both color schemes for free, with no hardcoded hexes to drift.
+  const token = (name, fallback) => getComputedStyle(document.documentElement)
+    .getPropertyValue(name).trim() || fallback;
+
+  const accent = token('--accent', '#0f766e');
+  const accentFill = `color-mix(in srgb, ${accent} 55%, transparent)`;
+  const textColor = token('--text-dim', '#6b7280');
+  const gridColor = token('--border', 'rgba(0,0,0,0.06)');
+  const fontFamily = token('--font-body', 'system-ui, sans-serif');
 
   new Chart(document.getElementById('myChart'), {
     type: 'bar',
@@ -29,15 +34,16 @@ Use for bar charts, line charts, pie/doughnut charts, radar charts, and other da
       datasets: [{
         label: 'Feedback Items',
         data: [45, 62, 78, 91, 120],
-        // Pull chart colors from the page palette — never Tailwind indigo/violet defaults
-        backgroundColor: isDark ? 'rgba(8, 145, 178, 0.55)' : 'rgba(3, 105, 161, 0.55)',
-        borderColor: isDark ? '#22b8d4' : '#0369a1',
+        // Palette tokens, never Tailwind indigo/violet defaults
+        backgroundColor: accentFill,
+        borderColor: accent,
         borderWidth: 1,
         borderRadius: 4,
       }]
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,  // fill the container's height, set in CSS below
       plugins: {
         legend: { labels: { color: textColor, font: { family: fontFamily } } },
       },
@@ -50,7 +56,8 @@ Use for bar charts, line charts, pie/doughnut charts, radar charts, and other da
 </script>
 ```
 
-Wrap the canvas in a styled container:
+The canvas sits in a styled container, and **the container is what sets the size**. With `responsive: true` Chart.js measures its parent and writes the canvas's own width/height itself — sizing the `<canvas>` in CSS (or with `width`/`height` attributes) fights that and produces stretched or thrashing re-renders on resize:
+
 ```css
 .chart-container {
   background: var(--surface);
@@ -58,10 +65,7 @@ Wrap the canvas in a styled container:
   border-radius: 10px;
   padding: 20px;
   position: relative;
-}
-
-.chart-container canvas {
-  max-height: 300px;
+  height: 300px;   /* size here, never on the canvas */
 }
 ```
 
@@ -69,17 +73,31 @@ Wrap the canvas in a styled container:
 
 Use when a diagram has 10+ elements and you want a choreographed entrance sequence (staggered reveals, path drawing, count-up numbers). For simpler diagrams, CSS `animation-delay` staggering is sufficient.
 
+**anime.js *replaces* the CSS entrance — it never layers on top of it.** The kit's default `fadeUp` already animates opacity and transform on `.hc-card` (see `css-patterns.md`, "Staggered Fade-In on Load"). Running both means two entrances fighting over the same two properties. So give the choreographed elements their own `.anime-in` class, and cancel `fadeUp` wherever the two meet.
+
+Put the CDN tag and the gate together in `<head>` — the gate must run before the elements paint, or they flash at full opacity and then jump to hidden:
+
 ```html
 <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.2/lib/anime.min.js"></script>
-
 <script>
-  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Only hide the targets once anime has actually loaded and motion is welcome.
+  // If the CDN is blocked, this class is never added and the page renders
+  // fully visible with no animation — the degradation tier doing its job.
+  if (window.anime && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.documentElement.classList.add('anime-ready');
+  }
+</script>
+```
 
-  if (!prefersReduced) {
+Then the choreography itself, at the end of `<body>`:
+
+```html
+<script>
+  if (document.documentElement.classList.contains('anime-ready')) {
     anime({
-      targets: '.hc-card',
+      targets: '.anime-in',
       opacity: [0, 1],
-      translateY: [20, 0],
+      translateY: [12, 0],   // same offset as the kit's fadeUp — entrances match
       delay: anime.stagger(80, { start: 200 }),
       easing: 'easeOutCubic',
       duration: 500,
@@ -108,12 +126,18 @@ Use when a diagram has 10+ elements and you want a choreographed entrance sequen
 </script>
 ```
 
-When using anime.js, set initial opacity to 0 in CSS so elements don't flash before the animation:
+The matching CSS. Note that the hide is scoped under `html.anime-ready` — a bare `.anime-in { opacity: 0 }` would leave every element permanently invisible the moment the CDN fails:
+
 ```css
-.hc-card { opacity: 0; }
+/* Hidden only when anime.js is present and about to animate them */
+html.anime-ready .anime-in { opacity: 0; }
+
+/* Cancel the kit's CSS entrance on anything anime.js is driving,
+   so the two don't fight over opacity and transform */
+.hc-card.anime-in { animation: none; }
 
 @media (prefers-reduced-motion: reduce) {
-  .hc-card { opacity: 1 !important; }
+  .anime-in { opacity: 1 !important; transform: none !important; }
 }
 ```
 

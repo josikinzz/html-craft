@@ -33,21 +33,29 @@ This section binds **any page that asks the user to approve, pick, rank, or sign
 
 A field whose source is still `agent` was never touched, whatever value sits in it. That case reads as *not confirmed* — never as agreement. Confirming is an action: the user clicks the already-selected option, which flips the source like any other interaction.
 
+That click fires no `change` event, because the value did not change. Capture provenance on `click` — or on `input` at the container — never on `change` alone, or confirming the recommendation records nothing and the export cannot tell confirmed from untouched.
+
 ```js
-// State is one object (see Mechanics); provenance is two extra keys per field.
+// State is one object (see Mechanics); provenance is three extra keys per field.
+// value      — what the field holds now; the only key a user interaction writes.
+// source     — "agent" until the user touches the field, then "user".
+// agentValue — the agent's proposal, frozen at load. Never overwritten.
+// reason     — the agent's rationale for agentValue, frozen at load. Never overwritten.
 state.answers = {
-  cacheLayer: { value: "redis", source: "agent", reason: "Already in the stack." },
-  retries:    { value: 3,       source: "user",  reason: "Agent recommended 3." },
-  rolloutPct: { value: 10,      source: "user",  reason: "Agent recommended 50." },
-  authFlow:   { value: null,    source: "agent", reason: "No default fits." }
+  cacheLayer: { value: "redis", source: "agent", agentValue: "redis", reason: "Already in the stack." },
+  retries:    { value: 3,       source: "user",  agentValue: 3,       reason: "Matches the upstream client default." },
+  rolloutPct: { value: 10,      source: "user",  agentValue: 50,      reason: "Half the fleet catches a regression fast." },
+  authFlow:   { value: null,    source: "agent", agentValue: null,    reason: "No default fits." }
 };
 state.notes = { page: "", byItem: { opt1: "", opt2: "" } };
 ```
 
+The export derives the three states from `source` and a comparison of `value` against `agentValue` — `agent` is untouched, `user` with a matching value is confirmed, `user` with a differing value is overridden. Because `reason` stays frozen, an overridden field can still report what the agent had wanted and why:
+
 ```markdown
-- Cache layer: **redis** — agent recommendation, NOT confirmed (untouched)
+- Cache layer: **redis** — agent recommendation, NOT confirmed (untouched). Reason given: already in the stack.
 - Retries: **3** — confirmed by the user (matches the recommendation)
-- Rollout %: **10** — set by the user (agent recommended 50)
+- Rollout %: **10** — set by the user (agent recommended 50: half the fleet catches a regression fast)
 - Auth flow: **unanswered** — no recommendation offered, no input given
 - Notes on option 2: "yes, but not the caching part"
 - Page notes: (none)
@@ -55,7 +63,7 @@ state.notes = { page: "", byItem: { opt1: "", opt2: "" } };
 
 Read the first line back as the agent: it says the value is yours, not theirs, and still needs a decision. That is the whole point of the rule.
 
-Style the recommendation marker and the notes fields on the existing token contract — an inline `.status`-style pill in `--accent` on `--accent-dim` for "Recommended", `--text-dim` for the one-line reason, `1px solid var(--border)` on the `<textarea>`. Full tinted borders, no left accent stripes, no emoji.
+The implementation — fieldset/legend question blocks, styled option rows and chips, the escape field, the Recommended pill, the notes fields, the form rhythm table, the provenance states, and the export bar — is in "Question Blocks (Asking the User)" in `css-patterns.md`. Copy it rather than improvising: an inline `.status`-style pill in `--accent` on `--accent-dim` for "Recommended", `--text-dim` for the one-line reason, `1px solid var(--border)` on the `<textarea>`. Full tinted borders, no left accent stripes, no emoji.
 
 ## Tool types
 

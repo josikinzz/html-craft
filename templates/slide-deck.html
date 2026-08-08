@@ -134,13 +134,15 @@
       transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .slide.visible .reveal { opacity: 1; transform: none; }
-  .slide.visible .reveal:nth-child(1) { transition-delay: 0.1s; }
-  .slide.visible .reveal:nth-child(2) { transition-delay: 0.2s; }
-  .slide.visible .reveal:nth-child(3) { transition-delay: 0.3s; }
-  .slide.visible .reveal:nth-child(4) { transition-delay: 0.4s; }
-  .slide.visible .reveal:nth-child(5) { transition-delay: 0.5s; }
-  .slide.visible .reveal:nth-child(6) { transition-delay: 0.6s; }
+  /* Stagger by --i set on each .reveal in the markup — not nth-child, which
+     counts every sibling (a decorative SVG, an un-revealed wrapper all consume
+     positions) and stops at whatever number the ladder was typed out to: the
+     7th reveal pops in at 0s while the 6th is still easing. */
+  .slide.visible .reveal {
+    opacity: 1;
+    transform: none;
+    transition-delay: calc(0.1s + var(--i, 0) * 0.1s);
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .slide, .slide .reveal {
@@ -160,18 +162,28 @@
   .deck-dots {
     position: fixed; right: clamp(12px, 2vw, 24px); top: 50%;
     transform: translateY(-50%); display: flex; flex-direction: column;
-    gap: 8px; z-index: 100; padding: 8px;
+    /* No gap: each button carries its own 24px of space. */
+    gap: 0; z-index: 100; padding: 4px;
     background: color-mix(in srgb, var(--bg) 85%, transparent 15%);
     border-radius: 20px;
   }
 
+  /* The button is a 24px hit target; ::before is the 8px dot you see. An 8px
+     button with an 8px gap fails the target floor however it's styled — the
+     floor is about the space between centers, so the centers move to 24px. */
   .deck-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--text-dim); opacity: 0.3; border: none; padding: 0;
-    cursor: pointer; transition: opacity 0.2s ease, transform 0.2s ease;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: none; border: none; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
   }
-  .deck-dot:hover { opacity: 0.6; }
-  .deck-dot.active { opacity: 1; transform: scale(1.5); background: var(--accent); }
+  .deck-dot::before {
+    content: ''; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--text-dim); opacity: 0.3;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .deck-dot:hover::before { opacity: 0.6; }
+  .deck-dot.active::before { opacity: 1; transform: scale(1.5); background: var(--accent); }
 
   .deck-counter {
     position: fixed; bottom: clamp(12px, 2vh, 24px); right: clamp(12px, 2vw, 24px);
@@ -301,7 +313,9 @@
   .slide__bullets li::before {
     content: '';
     position: absolute;
-    left: 0; top: 20px;
+    /* padding-top + half a 1.5 line - half the dot. A fixed px top drifts
+       above the text as the clamp'd font grows toward projection size. */
+    left: 0; top: calc(10px + 0.75em - 3px);
     width: 6px; height: 6px;
     border-radius: 50%;
     background: var(--accent);
@@ -378,6 +392,10 @@
     transition: background 0.15s, color 0.15s;
   }
   .zoom-controls button:hover { background: var(--border); color: var(--text); }
+  /* 28px is a mouse-sized target; touch-primary devices get the 44px floor. */
+  @media (pointer: coarse) {
+    .zoom-controls button { width: 44px; height: 44px; }
+  }
   /* Slides are fixed-viewport: no in-slide pan/zoom fork. Click opens full size.
      The full transform-based pan/zoom engine (see mermaid.md) is for scrollable pages. */
   .mermaid-wrap { cursor: zoom-in; }
@@ -493,7 +511,7 @@
   .data-table code {
     font-family: var(--font-mono); font-size: 0.85em;
     background: var(--accent-dim); color: var(--accent);
-    padding: 1px 5px; border-radius: 3px;
+    padding: 1px 6px; border-radius: 3px;
   }
 
   /* ============ SLIDE TYPE: CODE ============ */
@@ -646,11 +664,11 @@
       <line x1="0" y1="80" x2="0" y2="120" stroke="var(--accent)" stroke-width="2" opacity="0.15"/>
       <line x1="0" y1="120" x2="40" y2="120" stroke="var(--accent)" stroke-width="2" opacity="0.15"/>
     </svg>
-    <div class="reveal">
+    <div class="reveal" style="--i:0">
       <p class="slide__subtitle" style="margin-bottom:clamp(16px,2vh,32px);">Engineering Review &mdash; Q1 2026</p>
     </div>
-    <h1 class="slide__display reveal">API Gateway Redesign</h1>
-    <div class="reveal">
+    <h1 class="slide__display reveal" style="--i:1">API Gateway Redesign</h1>
+    <div class="reveal" style="--i:2">
       <p class="slide__subtitle" style="margin-top:clamp(16px,2vh,32px);">From monolith proxy to edge-native routing</p>
     </div>
   </section>
@@ -659,8 +677,8 @@
   <section class="slide slide--divider" style="background-image:radial-gradient(ellipse at 80% 60%, var(--accent-dim) 0%, transparent 40%);">
     <span class="slide__number">01</span>
     <div>
-      <h2 class="slide__heading reveal">The Problem</h2>
-      <p class="slide__subtitle reveal" style="margin-top:12px;">Why the current gateway can't scale</p>
+      <h2 class="slide__heading reveal" style="--i:0">The Problem</h2>
+      <p class="slide__subtitle reveal" style="--i:1; margin-top:12px;">Why the current gateway can't scale</p>
     </div>
   </section>
 
@@ -668,16 +686,16 @@
   <section class="slide slide--content" style="background-image:radial-gradient(ellipse at 20% 80%, var(--accent-dim) 0%, transparent 45%);">
     <div class="slide__inner">
       <div>
-        <p class="slide__label reveal">Current State</p>
-        <h2 class="slide__heading reveal">Single Point of Failure</h2>
+        <p class="slide__label reveal" style="--i:0">Current State</p>
+        <h2 class="slide__heading reveal" style="--i:1">Single Point of Failure</h2>
         <ul class="slide__bullets">
-          <li class="reveal">All traffic routes through one Node.js process</li>
-          <li class="reveal">Rate limiting is per-instance, not distributed</li>
-          <li class="reveal">Auth validation adds 40ms per request</li>
-          <li class="reveal">No circuit breaking: cascade failures hit everything</li>
+          <li class="reveal" style="--i:0">All traffic routes through one Node.js process</li>
+          <li class="reveal" style="--i:1">Rate limiting is per-instance, not distributed</li>
+          <li class="reveal" style="--i:2">Auth validation adds 40ms per request</li>
+          <li class="reveal" style="--i:3">No circuit breaking: cascade failures hit everything</li>
         </ul>
       </div>
-      <div class="slide__aside reveal">
+      <div class="slide__aside reveal" style="--i:1">
         <svg viewBox="0 0 160 160" width="160" height="160">
           <circle cx="80" cy="80" r="60" fill="none" stroke="var(--red)" stroke-width="2" opacity="0.3"/>
           <circle cx="80" cy="80" r="40" fill="none" stroke="var(--red)" stroke-width="1.5" opacity="0.2" stroke-dasharray="4 4"/>
@@ -692,23 +710,23 @@
   <section class="slide slide--split">
     <div class="slide__panels">
       <div class="slide__panel slide__panel--primary">
-        <p class="slide__label reveal" style="color:var(--red);">Before</p>
-        <h2 class="slide__heading reveal" style="font-size:clamp(22px,3.5vw,36px);">Monolith Proxy</h2>
+        <p class="slide__label reveal" style="--i:0; color:var(--red);">Before</p>
+        <h2 class="slide__heading reveal" style="--i:1; font-size:clamp(22px,3.5vw,36px);">Monolith Proxy</h2>
         <ul class="slide__bullets" style="margin-top:16px;">
-          <li class="reveal">Express.js middleware chain</li>
-          <li class="reveal">In-memory rate limit counters</li>
-          <li class="reveal">Synchronous JWT validation</li>
-          <li class="reveal">Manual upstream health checks</li>
+          <li class="reveal" style="--i:0">Express.js middleware chain</li>
+          <li class="reveal" style="--i:1">In-memory rate limit counters</li>
+          <li class="reveal" style="--i:2">Synchronous JWT validation</li>
+          <li class="reveal" style="--i:3">Manual upstream health checks</li>
         </ul>
       </div>
       <div class="slide__panel slide__panel--secondary">
-        <p class="slide__label reveal" style="color:var(--green);">After</p>
-        <h2 class="slide__heading reveal" style="font-size:clamp(22px,3.5vw,36px);">Edge-Native</h2>
+        <p class="slide__label reveal" style="--i:0; color:var(--green);">After</p>
+        <h2 class="slide__heading reveal" style="--i:1; font-size:clamp(22px,3.5vw,36px);">Edge-Native</h2>
         <ul class="slide__bullets" style="margin-top:16px;">
-          <li class="reveal">Cloudflare Workers at the edge</li>
-          <li class="reveal">Durable Objects for distributed state</li>
-          <li class="reveal">Async JWT with key caching</li>
-          <li class="reveal">Automatic circuit breakers</li>
+          <li class="reveal" style="--i:0">Cloudflare Workers at the edge</li>
+          <li class="reveal" style="--i:1">Durable Objects for distributed state</li>
+          <li class="reveal" style="--i:2">Async JWT with key caching</li>
+          <li class="reveal" style="--i:3">Automatic circuit breakers</li>
         </ul>
       </div>
     </div>
@@ -718,15 +736,15 @@
   <section class="slide slide--divider" style="background-image:radial-gradient(ellipse at 30% 40%, var(--accent-dim) 0%, transparent 40%);">
     <span class="slide__number">02</span>
     <div>
-      <h2 class="slide__heading reveal">Architecture</h2>
-      <p class="slide__subtitle reveal" style="margin-top:12px;">How the new system works</p>
+      <h2 class="slide__heading reveal" style="--i:0">Architecture</h2>
+      <p class="slide__subtitle reveal" style="--i:1; margin-top:12px;">How the new system works</p>
     </div>
   </section>
 
   <!-- SLIDE 6: DIAGRAM -->
   <section class="slide slide--diagram">
-    <h2 class="slide__heading reveal">Request Flow</h2>
-    <div class="mermaid-wrap reveal">
+    <h2 class="slide__heading reveal" style="--i:0">Request Flow</h2>
+    <div class="mermaid-wrap reveal" style="--i:1">
       <div class="zoom-controls">
         <button onclick="openDiagramFullscreen(this)" title="Open full size in new tab" aria-label="Open full size in new tab">&#x26F6;</button>
       </div>
@@ -753,13 +771,13 @@ graph LR
 
   <!-- SLIDE 7: DASHBOARD -->
   <section class="slide slide--dashboard" style="background-image:radial-gradient(ellipse at 70% 30%, var(--accent-dim) 0%, transparent 40%);">
-    <h2 class="slide__heading reveal">Performance Impact</h2>
+    <h2 class="slide__heading reveal" style="--i:0">Performance Impact</h2>
     <!-- One dominant figure, supporting metrics inline in prose — not a uniform KPI card grid -->
-    <div class="reveal" style="margin-top:clamp(20px,5vh,56px);">
+    <div class="reveal" style="--i:1; margin-top:clamp(20px,5vh,56px);">
       <div class="slide__kpi-val" style="color:var(--accent); font-size:clamp(80px,15vw,180px); line-height:0.95;">12ms</div>
       <div class="slide__kpi-label" style="margin-top:8px;">P99 latency, down from 142ms</div>
     </div>
-    <p class="slide__subtitle reveal" style="margin-top:clamp(24px,5vh,48px); max-width:56ch;">
+    <p class="slide__subtitle reveal" style="--i:2; margin-top:clamp(24px,5vh,48px); max-width:56ch;">
       Uptime rose from 99.2% to <strong style="color:var(--green);">99.97%</strong> across
       <strong>340</strong> edge locations, at <strong style="color:var(--accent);">$0.02</strong>
       per 10K requests: a 68% cost reduction.
@@ -768,11 +786,11 @@ graph LR
 
   <!-- SLIDE 8: TABLE -->
   <section class="slide slide--table">
-    <h2 class="slide__heading reveal">Migration Phases</h2>
-    <div class="table-wrap reveal" style="flex:1; min-height:0; margin-top:clamp(8px,1.5vh,20px);">
+    <h2 class="slide__heading reveal" style="--i:0">Migration Phases</h2>
+    <div class="table-wrap reveal" style="--i:1; flex:1; min-height:0; margin-top:clamp(8px,1.5vh,20px);">
       <div class="table-scroll">
         <table class="data-table">
-          <thead><tr><th>Phase</th><th>Scope</th><th>Timeline</th><th>Risk</th></tr></thead>
+          <thead><tr><th scope="col">Phase</th><th scope="col">Scope</th><th scope="col">Timeline</th><th scope="col">Risk</th></tr></thead>
           <tbody>
             <tr><td>1. Shadow mode</td><td>Mirror traffic to edge, compare responses</td><td>Week 1&ndash;2</td><td style="color:var(--green);">Low</td></tr>
             <tr><td>2. Canary rollout</td><td>5% traffic to edge, monitor errors</td><td>Week 3</td><td style="color:var(--green);">Low</td></tr>
@@ -787,8 +805,8 @@ graph LR
 
   <!-- SLIDE 9: CODE -->
   <section class="slide slide--code" style="background-image:radial-gradient(ellipse at 50% 80%, var(--accent-dim) 0%, transparent 40%);">
-    <h2 class="slide__heading reveal" style="text-align:center;">Edge Worker Entry Point</h2>
-    <div class="slide__code-block reveal" style="margin-top:clamp(12px,2vh,24px);">
+    <h2 class="slide__heading reveal" style="--i:0; text-align:center;">Edge Worker Entry Point</h2>
+    <div class="slide__code-block reveal" style="--i:1; margin-top:clamp(12px,2vh,24px);">
       <span class="slide__code-filename">gateway.ts</span>
       <pre><code><span class="hl">export default</span> {
   <span class="hl">async fetch</span>(req: Request, env: Env) {
@@ -806,11 +824,11 @@ graph LR
 
   <!-- SLIDE 10: QUOTE -->
   <section class="slide slide--quote" style="background-image:radial-gradient(ellipse at 50% 50%, var(--accent-dim) 0%, transparent 35%);">
-    <div class="slide__quote-mark reveal">&ldquo;</div>
-    <blockquote class="reveal">
+    <div class="slide__quote-mark reveal" style="--i:0">&ldquo;</div>
+    <blockquote class="reveal" style="--i:1">
       The fastest request is the one that never leaves the edge.
     </blockquote>
-    <cite class="reveal">&mdash; Edge Computing Principle</cite>
+    <cite class="reveal" style="--i:2">&mdash; Edge Computing Principle</cite>
   </section>
 
   <!-- SLIDE 11: FULL-BLEED -->
@@ -821,9 +839,9 @@ graph LR
       <!-- No inline color overrides: the .slide--bleed rules already set the
            ink at a tested alpha. Inline 0.6-alpha white is how bleed slides
            quietly drop under 4.5:1. -->
-      <p class="slide__label reveal">Next Steps</p>
-      <h2 class="slide__heading reveal">Ship Shadow Mode This Week</h2>
-      <p class="slide__subtitle reveal" style="margin-top:12px;">Full cutover targeted for end of Q1</p>
+      <p class="slide__label reveal" style="--i:0">Next Steps</p>
+      <h2 class="slide__heading reveal" style="--i:1">Ship Shadow Mode This Week</h2>
+      <p class="slide__subtitle reveal" style="--i:2; margin-top:12px;">Full cutover targeted for end of Q1</p>
     </div>
   </section>
 
@@ -932,7 +950,7 @@ graph LR
   // In-slide pan/zoom is deliberately absent — slides are fixed-viewport, and the
   // single pan/zoom engine lives in the scrollable-page pattern (mermaid.md).
   function openDiagramFullscreen(b){openMermaidInNewTab(b.closest('.mermaid-wrap'));}
-  function openMermaidInNewTab(w){var svg=w.querySelector('.mermaid svg');if(!svg)return;var clone=svg.cloneNode(true);clone.style.zoom='';clone.style.transform='';var styles=getComputedStyle(document.documentElement);var bg=styles.getPropertyValue('--bg').trim()||'#ffffff';var html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Diagram</title><style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:'+bg+';padding:40px;box-sizing:border-box}svg{max-width:100%;max-height:90vh;height:auto}</style></head><body>'+clone.outerHTML+'</body></html>';window.open(URL.createObjectURL(new Blob([html],{type:'text/html'})),'_blank');}
+  function openMermaidInNewTab(w){var svg=w.querySelector('.mermaid svg');if(!svg)return;var clone=svg.cloneNode(true);clone.style.zoom='';clone.style.transform='';var styles=getComputedStyle(document.documentElement);var bg=styles.getPropertyValue('--bg').trim()||'#ffffff';var html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Diagram</title><style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:'+bg+';padding:48px;box-sizing:border-box}svg{max-width:100%;max-height:90vh;height:auto}</style></head><body>'+clone.outerHTML+'</body></html>';window.open(URL.createObjectURL(new Blob([html],{type:'text/html'})),'_blank');}
   document.querySelectorAll('.mermaid-wrap').forEach(function(w){w.addEventListener('click',function(e){if(e.target.closest('.zoom-controls'))return;openMermaidInNewTab(w);});});
 
   // SlideEngine
@@ -977,7 +995,13 @@ graph LR
     var obs=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add('visible');self.current=self.slides.indexOf(entry.target);self.update();}});},{threshold:0.5});
     this.slides.forEach(function(s){obs.observe(s);});
   };
-  SlideEngine.prototype.goTo=function(i){this.slides[Math.max(0,Math.min(i,this.total-1))].scrollIntoView({behavior:'smooth'});};
+  // Chrome and Safari animate behavior:'smooth' whatever the motion preference
+  // says — only Firefox honors it. Read the query at call time, not at boot, so
+  // a mid-session flip is respected.
+  SlideEngine.prototype.goTo=function(i){
+    var motionOK=!matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.slides[Math.max(0,Math.min(i,this.total-1))].scrollIntoView({behavior:motionOK?'smooth':'auto'});
+  };
   SlideEngine.prototype.next=function(){if(this.current<this.total-1)this.goTo(this.current+1);};
   SlideEngine.prototype.prev=function(){if(this.current>0)this.goTo(this.current-1);};
   SlideEngine.prototype.update=function(){

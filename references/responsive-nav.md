@@ -62,16 +62,23 @@ Key structural rules:
   top: 24px;
   align-self: start;
   padding: 14px 0;
-  grid-row: 1 / -1;
+  /* `.toc` and `.main` are the wrap's only children, so both land in row 1.
+     `grid-row: 1 / -1` reads like "span every row" but -1 can't address
+     implicit rows — with no grid-template-rows it resolves to row 1 anyway.
+     Say row 1 outright rather than lean on that. If the wrap ever gains
+     explicit rows the sidebar wants to span, declare them and update this. */
+  grid-row: 1;
   max-height: calc(100dvh - 48px);
   overflow-y: auto;
 }
 .toc::-webkit-scrollbar { width: 3px; }
 .toc::-webkit-scrollbar-thumb { background: var(--surface-elevated); border-radius: 2px; }
 
+/* 10px is the floor for a mono label at this tracking — 9px in --text-dim is
+   past the point where the uppercase forms stay distinguishable. */
 .toc-title {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -111,6 +118,17 @@ The 2px `border-left` on `.active` is a functional state indicator, not a decora
 
 ```css
 @media (max-width: 1000px) {
+  /* The bar's metrics are tokens so its height can be computed instead of
+     guessed — `scroll-margin-top` below depends on it, and a hardcoded number
+     there silently goes stale the first time this padding or type size moves. */
+  :root {
+    --toc-bar-pad: 10px;
+    --toc-link-pad: 6px;
+    --toc-link-size: 12px;
+    --toc-bar-h: calc(2 * var(--toc-bar-pad) + 2 * var(--toc-link-pad)
+                      + var(--toc-link-size) * 1.4 + 1px);  /* +1px bottom border */
+  }
+
   .wrap { grid-template-columns: 1fr; padding-top: 0; }
   body { padding-top: 0; }
 
@@ -126,7 +144,7 @@ The 2px `border-left` on `.active` is a functional state indicator, not a decora
     -webkit-overflow-scrolling: touch;
     background: var(--bg);
     border-bottom: 1px solid var(--border);
-    padding: 10px 0;
+    padding: var(--toc-bar-pad) 0;
     margin: 0 -40px;
     padding-left: 40px;
     padding-right: 40px;
@@ -135,14 +153,17 @@ The 2px `border-left` on `.active` is a functional state indicator, not a decora
   .toc::-webkit-scrollbar { display: none; }
   .toc-title { display: none; }
 
+  /* Same floor as the desktop rail: these are navigation targets, not
+     captions. 10px was below it — the bar is the only nav a phone reader has. */
   .toc a {
     white-space: nowrap;
     flex-shrink: 0;
     border-left: none;
     border-bottom: 2px solid transparent;
     border-radius: 4px 4px 0 0;
-    padding: 6px 10px;
-    font-size: 10px;
+    padding: var(--toc-link-pad) 10px;
+    font-size: var(--toc-link-size);
+    line-height: 1.4;
   }
   .toc a.active {
     border-left: none;
@@ -152,8 +173,8 @@ The 2px `border-left` on `.active` is a functional state indicator, not a decora
 
   .main { padding-top: 20px; }
 
-  /* Offset scroll target so headings clear the sticky bar */
-  .sec-head { scroll-margin-top: 52px; }
+  /* Offset scroll target so headings clear the sticky bar, plus a little air */
+  .sec-head { scroll-margin-top: calc(var(--toc-bar-h) + 8px); }
 }
 ```
 
@@ -169,6 +190,11 @@ Place before `</body>`, after any Mermaid init:
   const toc = document.getElementById('toc');
   const links = toc.querySelectorAll('a');
   const sections = [];
+
+  // Chrome and Safari animate scrollIntoView({behavior:'smooth'}) whatever the
+  // user's motion preference says — only Firefox honors it. Every scripted
+  // scroll here checks for itself. Read at call time so a mid-session flip counts.
+  const motionOK = () => !matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   links.forEach(link => {
     const id = link.getAttribute('href').slice(1);
@@ -186,7 +212,8 @@ Place before `</body>`, after any Mermaid init:
           // On mobile, auto-scroll the active tab into view
           if (window.innerWidth <= 1000) {
             match.link.scrollIntoView({
-              behavior: 'smooth', block: 'nearest', inline: 'center'
+              behavior: motionOK() ? 'smooth' : 'auto',
+              block: 'nearest', inline: 'center'
             });
           }
         }
@@ -202,7 +229,7 @@ Place before `</body>`, after any Mermaid init:
       const id = link.getAttribute('href').slice(1);
       const el = document.getElementById(id);
       if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        el.scrollIntoView({ behavior: motionOK() ? 'smooth' : 'auto', block: 'start' });
         history.replaceState(null, '', '#' + id);
       }
     });
@@ -216,5 +243,6 @@ Place before `</body>`, after any Mermaid init:
 - The `.toc-title` text, link labels, accent color, and section IDs change per page. Everything else is copy-paste.
 - For pages with fewer than 4 sections, skip the TOC entirely — it adds clutter without value.
 - The `grid-template-columns: 170px 1fr` width works for most TOCs. If section names are longer, go up to `200px`.
+- Change the mobile bar's padding or link size through the `--toc-bar-*` tokens, not the rules themselves — `--toc-bar-h` feeds the heading `scroll-margin-top`, so headings keep clearing the bar without a second edit.
 - The `rootMargin: '-10% 0px -80% 0px'` means a section is "active" when its heading enters the top 10-20% of the viewport. This works well with sticky headers.
 - On mobile, the horizontal bar uses `overflow-x: auto` with hidden scrollbar. The active tab auto-scrolls into the center of the bar as the user scrolls the page.

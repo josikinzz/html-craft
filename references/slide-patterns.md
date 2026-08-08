@@ -48,8 +48,11 @@ The deck is a scroll-snap container. Each slide is exactly one viewport tall.
   height: 100dvh;
   overflow-y: auto;
   scroll-snap-type: y mandatory;
-  /* No scroll-behavior: smooth here — goTo() uses scrollIntoView({behavior:'smooth'}),
-     which reduced-motion users' browsers can override; the CSS property can't be. */
+  /* No scroll-behavior: smooth here — goTo() does its own scrolling, so the
+     motion decision belongs in JS where the deck can check the preference.
+     Don't assume the browser handles it: only Firefox drops smooth scrolling
+     for reduced-motion users; Chrome and Safari animate regardless, for both
+     the CSS property and scrollIntoView(). Guard it yourself (see below). */
   -webkit-overflow-scrolling: touch;
 }
 
@@ -154,13 +157,15 @@ IntersectionObserver adds `.visible` when a slide enters the viewport. Slides an
   transform: none;
 }
 
-/* Stagger delays — up to 6 children per slide */
-.slide.visible .reveal:nth-child(1) { transition-delay: 0.1s; }
-.slide.visible .reveal:nth-child(2) { transition-delay: 0.2s; }
-.slide.visible .reveal:nth-child(3) { transition-delay: 0.3s; }
-.slide.visible .reveal:nth-child(4) { transition-delay: 0.4s; }
-.slide.visible .reveal:nth-child(5) { transition-delay: 0.5s; }
-.slide.visible .reveal:nth-child(6) { transition-delay: 0.6s; }
+/* Stagger delays — set --i on each .reveal in the HTML: 0, 1, 2, …
+   Not nth-child: it counts every sibling (a heading, a decorative SVG, an
+   un-revealed wrapper all consume positions), and a hand-written ladder stops
+   at whatever number you typed — the 7th item then pops in at 0s while the
+   6th is still easing. The custom property has no ceiling and doesn't care
+   what sits between the revealed elements. */
+.slide.visible .reveal {
+  transition-delay: calc(0.1s + var(--i, 0) * 0.1s);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .slide,
@@ -171,6 +176,8 @@ IntersectionObserver adds `.visible` when a slide enters the viewport. Slides an
   }
 }
 ```
+
+Number the reveals inline, restarting at 0 on each slide — `<li class="reveal" style="--i:0">`, `--i:1`, and so on. A `.reveal` without `--i` still animates; it just lands in the first wave.
 
 ## Navigation Chrome
 
@@ -201,34 +208,50 @@ All navigation is `position: fixed` with high z-index, layered above slides. Sty
   transform: translateY(-50%);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0; /* the spacing lives inside each button — see below */
   z-index: 100;
 }
 
-/* Inactive dots at 0.3 alpha are effectively invisible — they're a control,
-   so they need the 3:1 non-text floor. 0.55 reads as "available but quiet". */
+/* 8px of ink inside a 24px button. An 8px dot with an 8px gap is a third of
+   the 24px target-size floor and puts neighbouring targets 16px apart — easy
+   to mis-tap, and impossible to hit at all with a shaky pointer. Keep the mark
+   small and make the hit area real: the dot moves to ::before and the button
+   becomes the target. Inactive dots at 0.3 alpha are effectively invisible —
+   they're a control, so they need the 3:1 non-text floor. 0.55 reads as
+   "available but quiet". */
 .deck-dot {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  padding: 0;
+  cursor: pointer;
+}
+
+.deck-dot::before {
+  content: '';
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--text-dim);
   opacity: 0.55;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
 }
 
-.deck-dot:hover {
+.deck-dot:hover::before {
   opacity: 0.85;
 }
 
+/* Ring hugs the hit area rather than floating 3px outside it */
 .deck-dot:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 3px;
+  outline-offset: -2px;
 }
 
-.deck-dot.active {
+.deck-dot.active::before {
   opacity: 1;
   transform: scale(1.5);
   background: var(--accent);
@@ -269,9 +292,9 @@ Auto-fade after first interaction or after 4 seconds.
   white-space: nowrap;
 }
 
+/* Dim, don't remove — a viewer who looks back for the controls still finds them */
 .deck-hints.faded {
-  opacity: 0;
-  pointer-events: none;
+  opacity: 0.25;
 }
 ```
 
@@ -298,6 +321,14 @@ Rules the implementation embodies (verify these survive your adaptation):
 - **Event delegation:** keyboard handlers skip events originating inside `.mermaid-wrap, .table-scroll, .code-scroll, input, textarea, [contenteditable]` so slide-internal interactions never trigger slide navigation.
 - **Deep links:** `#5` opens on slide 5; `update()` keeps the URL at the current slide via `history.replaceState` (wrapped in try/catch for `file://` edge cases).
 - **Chrome is built in JS:** progress bar, dots (one focusable button per slide), counter, and keyboard hints are appended to `<body>`, so slide markup stays clean.
+- **Reduced motion is checked, not delegated:** Chrome and Safari animate `scrollIntoView({behavior:'smooth'})` no matter what the user's motion preference says — only Firefox overrides it. So `goTo()` reads the preference itself, at call time, and picks the behavior:
+
+  ```javascript
+  const motionOK = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView({ behavior: motionOK ? 'smooth' : 'auto' });
+  ```
+
+  Same guard on every other scripted scroll in the deck. Reading it inside the handler rather than once at boot means a mid-session preference flip is honored.
 - **Hints dim, never vanish:** after the 4s timer or first keypress, `.deck-hints.faded` drops to low opacity — first-time viewers can still find it.
 - **IntersectionObserver at `threshold: 0.5`** both marks slides `.visible` (triggering reveals) and tracks the current index — one observer, two jobs.
 
@@ -419,8 +450,8 @@ Heading + bullets or paragraphs. Asymmetric layout — content offset to one sid
     <div class="slide__text">
       <h2 class="slide__heading reveal">Heading</h2>
       <ul class="slide__bullets">
-        <li class="reveal">First point</li>
-        <li class="reveal">Second point</li>
+        <li class="reveal" style="--i:0">First point</li>
+        <li class="reveal" style="--i:1">Second point</li>
       </ul>
     </div>
     <div class="slide__aside reveal">
@@ -437,6 +468,14 @@ Heading + bullets or paragraphs. Asymmetric layout — content offset to one sid
   gap: clamp(24px, 4vw, 60px);
   align-items: center;
   width: 100%;
+}
+
+/* Grid items default to min-width: auto, which means a long unbroken string,
+   a code block, or a Mermaid SVG sets the column's floor and pushes the other
+   column off the slide. Both tracks opt out. */
+.slide--content .slide__text,
+.slide--content .slide__aside {
+  min-width: 0;
 }
 
 /* For right-heavy variant: swap to 2fr 3fr */
@@ -469,7 +508,10 @@ Heading + bullets or paragraphs. Asymmetric layout — content offset to one sid
   content: '';
   position: absolute;
   left: 0;
-  top: 18px;
+  /* Derived, not eyeballed: padding-top + half a line - half the dot.
+     A fixed 18px is correct only at the clamp's 16px minimum; by 22px the
+     line has grown 10px and the marker floats up near the ascenders. */
+  top: calc(8px + 0.8em - 3px);
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -511,6 +553,8 @@ Asymmetric two-panel (60/40 or 70/30). Before/after, text+diagram, text+image. E
   display: flex;
   flex-direction: column;
   justify-content: center;
+  min-width: 0;   /* a code block or Mermaid SVG here would otherwise widen the
+                     track and shove the other panel past the slide edge */
 }
 
 .slide--split .slide__panel--primary {
@@ -703,12 +747,23 @@ For simple linear flows (build steps, deployment stages, data pipelines) where M
 }
 
 @media (max-width: 768px) {
-  .pipeline { flex-direction: column; }
+  .pipeline {
+    flex-direction: column;
+    /* Stacked, 5–6 cards are taller than the slide, and the slide is
+       overflow: hidden — the last steps would simply be gone, with no scroll
+       and no arrow to reveal them. The pipeline scrolls itself instead;
+       overscroll-behavior keeps that scroll from snapping the deck. */
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .pipeline__step { flex: 0 0 auto; }
   .pipeline__arrow { justify-content: center; padding: 4px 0; transform: rotate(90deg); }
 }
 ```
 
 Each `.pipeline__step` uses `flex: 1` to fill available width equally, and the pipeline container itself uses `flex: 1` to fill available vertical space in the slide. Step cards stretch to fill, so the content isn't floating in empty space. The `.pipeline__file` badge at the bottom anchors each card and adds a practical detail. Max 5–6 steps — beyond that, split across two slides.
+
+**Stacked pipelines must not clip.** Horizontally, 6 steps fit; stacked at ≤768px they don't, and a fixed-height slide has no recovery — the reader can't tell that steps 5 and 6 ever existed. Preferred fix is content-side: 3 steps per slide in the stacked case, continued on a second slide, which keeps the "a slide never scrolls" rule intact. The contained scroll above is the fallback for a pipeline you can't split, and it's the same carve-out wide tables and diagrams already take.
 
 ### Dashboard Slide
 
@@ -881,13 +936,17 @@ KPI cards at presentation scale (48–64px hero numbers). Mini-charts via Chart.
   padding: clamp(60px, 10vh, 120px) clamp(60px, 12vw, 200px);
 }
 
+/* The glyph sits in the top half of its box, so line-height: 0.5 trims the
+   empty space under it and the negative margin closes what's left. Both are
+   fractions of the type size, not pixels — a px value tuned at the clamp's
+   80px minimum leaves a 45px hole at 180px. */
 .slide__quote-mark {
   font-size: clamp(80px, 14vw, 180px);
   line-height: 0.5;
   opacity: 0.08;
   font-family: Georgia, serif;
   pointer-events: none;
-  margin-bottom: -20px;
+  margin-bottom: -0.25em;
 }
 
 .slide--quote blockquote {
@@ -1139,7 +1198,7 @@ Slides get projected, screen-shared, viewed at distance. Design accordingly:
 
 ## Content Density Limits
 
-Each slide must fit in exactly 100dvh. If content exceeds these limits, the agent splits across multiple slides — never scrolls within a slide.
+Each slide must fit in exactly 100dvh. If content exceeds these limits, the agent splits across multiple slides — the slide itself never scrolls. A contained scroll region *inside* a slide (a wide table, a stacked pipeline on a narrow viewport) is the one carve-out, and only where the alternative is content clipped away with no way to reach it.
 
 | Slide type | Max content |
 |-----------|-------------|
@@ -1180,14 +1239,36 @@ Height-based scaling is more critical for slides than width. Each breakpoint pro
   .slide {
     padding: clamp(16px, 3vh, 24px) clamp(24px, 5vw, 48px);
   }
-  .deck-dots { display: none; } /* dots clutter tiny viewports */
+  /* A column of 24px hit areas doesn't fit in 500px of height, and shrinking
+     it back under the target floor just recreates the untappable dot. Drop the
+     column instead — it only ever duplicated swipe, scroll, and arrow keys.
+     The counter stays: it's the remaining "where am I" affordance, so never
+     hide it in the same breakpoint. */
+  .deck-dots { display: none; }
   .slide__display { font-size: clamp(28px, 7vw, 48px); }
 }
 
 /* Width breakpoint for grids */
 @media (max-width: 768px) {
   .slide--content .slide__inner { grid-template-columns: 1fr; }
-  .slide--content .slide__aside { display: none; }
+
+  /* The aside stacks under the text, it doesn't disappear. Proactive Imagery
+     sends real generated illustrations to this slot, and `display: none` on a
+     one-column layout deletes them for every phone reader. Bound the height so
+     the image can't push the bullets off a fixed-height slide. */
+  .slide--content .slide__aside {
+    max-height: 26vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .slide--content .slide__aside > * {
+    max-height: 26vh;
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+
   .slide--split .slide__panels { grid-template-columns: 1fr; }
   .slide--dashboard .slide__kpis { grid-template-columns: repeat(2, 1fr); }
 }

@@ -96,7 +96,7 @@
     background: var(--bg);
     color: var(--text);
     font-family: var(--font-sans);
-    padding: 40px;
+    padding: 48px;
     min-height: 100vh;
     /* One quiet fade on the whole page; nothing staggers. */
     animation: pageIn 0.4s ease-out both;
@@ -140,7 +140,7 @@
     font-family: var(--font-body);
     font-style: italic;
     font-size: 15px;
-    margin-bottom: 28px;
+    margin-bottom: 32px;
   }
 
   /* ============ STAT STRIP ============ */
@@ -172,13 +172,13 @@
     color: var(--text-dim);
     border-bottom: 1px solid var(--border-bright);
     padding-bottom: 6px;
-    margin: 28px 0 14px;
+    margin: 32px 0 12px;
   }
 
   /* ============ LEGEND ============ */
   .legend {
     display: flex;
-    gap: 18px;
+    gap: 16px;
     flex-wrap: wrap;
     margin-bottom: 16px;
     font-family: var(--font-body);
@@ -187,7 +187,7 @@
     color: var(--text-dim);
   }
 
-  .legend-item { display: flex; align-items: center; gap: 7px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
 
   .legend-swatch {
     width: 10px;
@@ -206,10 +206,15 @@
 
   .audit-layout > * { min-width: 0; }
 
+  /* Notes stack evenly and read in table order. The binding to a row is the
+     .rail-ref label, NOT vertical position — pixel offsets tuned to one
+     table's row heights break the moment the row count or wrapping changes,
+     and a content-sized flex column has no free space for auto margins to
+     take up anyway. */
   .rail {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 24px;
     position: sticky;
     top: 24px;
   }
@@ -230,10 +235,6 @@
     color: var(--accent);
     margin-bottom: 3px;
   }
-
-  /* Push notes toward the rows they annotate (approximate alignment). */
-  .rail-note--mid { margin-top: 120px; }
-  .rail-note--end { margin-top: auto; }
 
   /* ============ TABLE WRAPPER ============ */
   .table-wrap {
@@ -317,7 +318,7 @@
     font-size: 11px;
     background: var(--accent-dim);
     color: var(--accent);
-    padding: 1px 5px;
+    padding: 1px 6px;
     border-radius: 3px;
   }
 
@@ -424,7 +425,7 @@
     font-size: 11px;
     background: var(--accent-dim);
     color: var(--accent);
-    padding: 1px 5px;
+    padding: 1px 6px;
     border-radius: 3px;
   }
 
@@ -432,8 +433,7 @@
   @media (max-width: 900px) {
     /* Rail collapses to inline notes below the table. */
     .audit-layout { grid-template-columns: minmax(0, 1fr); }
-    .rail { position: static; flex-direction: column; }
-    .rail-note--mid, .rail-note--end { margin-top: 0; }
+    .rail { position: static; }
   }
 
   @media (max-width: 768px) {
@@ -469,14 +469,16 @@
   <div class="audit-layout">
 
     <div class="table-wrap">
-      <div class="table-scroll" tabindex="0">
+      <!-- A scroll container is keyboard-focusable, so it needs a name:
+           role=region + aria-label, or it announces as an unlabelled group. -->
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Requirements audit table">
         <table class="data-table">
           <thead>
             <tr>
-              <th class="num">#</th>
-              <th class="wide">Request</th>
-              <th class="wide">Plan</th>
-              <th>Status</th>
+              <th scope="col" class="num">#</th>
+              <th scope="col" class="wide">Request</th>
+              <th scope="col" class="wide">Plan</th>
+              <th scope="col">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -585,11 +587,11 @@
         <span class="rail-ref">rows 1–7</span>
         Scope, timing, and settings requests map cleanly onto the plan; nothing here needs follow-up before Friday.
       </div>
-      <div class="rail-note rail-note--mid">
+      <div class="rail-note">
         <span class="rail-ref">row 8</span>
         The tag exclusion is half-implemented. PDP is covered; the PLP grid check is a five-line Liquid change but must land before launch.
       </div>
-      <div class="rail-note rail-note--end">
+      <div class="rail-note">
         <span class="rail-ref">row 14</span>
         The only true gap. See the analysis below for why the missing event could silently break downstream integrations.
       </div>

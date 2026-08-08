@@ -4,9 +4,9 @@ Reusable patterns for layout, connectors, theming, and visual effects in self-co
 
 ## The Contrast Contract
 
-Read this before picking a single color. Almost every unreadable generated page traces to one of three mistakes, and all three are structural — they survive any amount of eyeballing.
+The rules — the contrast floors, the ink/fill split, the `--text-dim` discipline — live in the SKILL.md Style step ("The contrast contract"); that is the single source of truth. This section is the scaffolding that implements it: the token shape, the one reflex to avoid, and the checker.
 
-**1. One accent doing two jobs.** A color bright enough to read as text on a dark page is far too bright to sit *under* white text. `#50fa7b`, `#22d3ee`, `#fb923c`, `#d4a73a`, `#34d399` all measure **1.4–2.7:1** against white. That is the "white text on pale green" failure. Split every accent in two:
+Every accent is a pair plus the ink that rides on it:
 
 | Token | Job | Requirement |
 |---|---|---|
@@ -17,11 +17,7 @@ Read this before picking a single color. Almost every unreadable generated page 
 
 The reflex to avoid: `background: var(--accent); color: #fff`. It passes in whichever theme you happened to look at and fails in the other.
 
-**2. Small type in weak color.** Badges, chips, tags, and captions run 10–12px, where contrast matters *more*, not less. On a light surface, the popular mid-tone semantics all fail as text: `#059669` (3.7:1), `#0891b2` (3.6:1), `#d97706` (3.1:1), `#ef4444` (3.3:1). Drop a step: `#15803d`, `#0f766e`, `#b45309`, `#b91c1c` all clear 4.5:1 against white while reading as the same hue.
-
-**3. `--text-dim` used as a body color.** Dim is for provenance stamps, timestamps, and captions — information a reader can skip. Bullets, card descriptions, and table cells go in `--text`; build hierarchy with size and weight, not by fading the words. `--text-dim` still has to clear 4.5:1 on every surface it lands on.
-
-**Floors:** 4.5:1 for anything read in sequence and for all text under ~19px; 3:1 for display type 24px+ and for meaningful non-text (borders, icons, focus rings, chart strokes). Decorative-only marks (watermark numerals, oversized quote glyphs) are exempt precisely because they carry no information — keep them at or below 0.08 opacity so they can't compete with the text over them.
+Decorative-only marks (watermark numerals, oversized quote glyphs) are exempt from the floors precisely because they carry no information — keep them at or below 0.08 opacity so they can't compete with the text over them.
 
 **Verify, don't estimate:**
 
@@ -147,11 +143,19 @@ If an aesthetic genuinely calls for a bright fill (a risograph spot color, a ter
 
 ## Spatial Scale
 
-Three scales govern every page. Pick from them rather than inventing a near-miss value — a 13px gap beside a 12px one reads as a mistake, not a decision.
+Three systems govern a page's geometry — spacing, radius, breakpoints. Pick from them rather than inventing a near-miss value: a 13px gap beside a 12px one reads as a mistake, not a decision.
 
-**Spacing — a 4pt scale.** `4, 8, 12, 16, 24, 32, 48, 64, 96`. Use `gap` for sibling spacing rather than margins. Vary spacing to build hierarchy: a heading with more space above it reads as more important.
+**Spacing — two tiers.** One scale for the page's pulse, one for what happens inside a component.
 
-Geometry that carries meaning is exempt: a `clip-path` percentage, a translate distance tuned to a ring radius, a container measure such as `max-width: 640px`. Comment the value where it leaves the scale.
+*The rhythm scale:* `4, 8, 12, 16, 24, 32, 48, 64, 96`. Everything that measures the distance *between* things comes from here — section margins, grid and flex gaps, card-to-card space, the vertical rhythm down the page. Use `gap` for sibling spacing rather than margins. Vary the step to build hierarchy: a heading with more space above it reads as more important.
+
+*Component half-steps:* `6, 10, 14, 20`. Sanctioned *inside* a component, where the full step is visibly too coarse — chip and badge padding, icon-to-label gaps, control padding, the inset on a small tag. A 10px badge padded to 24px isn't restraint, it's a mistake in the other direction.
+
+The rule for choosing is positional, not aesthetic: **between elements, take the rhythm scale; inside a component, the half-step is available.** The second tier exists to buy one notch of fineness where a badge needs it — not to become a second scale to compose the page in.
+
+Below 4px there is no scale. `1`, `2`, and `3px` are optical micro-adjustments — a marker nudge, a baseline trim, the 1px asymmetry that corrects a letterspaced cap — and need no justification.
+
+Geometry that carries meaning is exempt from both tiers: a `clip-path` percentage, a translate distance tuned to a ring radius, an indent derived from a control column's width, a container measure such as `max-width: 640px`. Comment the value where it leaves the scale.
 
 **Radius.**
 
@@ -167,7 +171,9 @@ Geometry that carries meaning is exempt: a `clip-path` percentage, a translate d
 
 Two breakpoints cover almost every page. Add a third only when content genuinely breaks between them, and reuse it across the page rather than tuning one per component.
 
-**Known drift.** Some values in this file predate these scales — radii at 2, 4, 5, 8, and 12px, and single uses of 720px and 1000px breakpoints. Align them when you next touch that section. New work takes the scales above.
+**Known drift.** Spacing and breakpoints in this file are aligned: every `padding`, `margin`, and `gap` below sits on the rhythm scale or a half-step, and the only breakpoints are 768px and 900px. What still drifts is **radius** — 2, 4, 5, 8, and 12px all appear against a table that sanctions 3, 6, 10, 999px, and 50%. Align those when you next touch the section they live in.
+
+Three spacing values are deliberately off both tiers, each carrying its reason in a comment: the escape field's `margin-left: 42px` (derived from row padding + control column + gap, so the field lines up with its option's text), the clipboard fallback's `top: -1000px` (an off-screen park, not spacing), and the two `calc((1.5em - 18px) / 2)` control offsets (computed from line-height so they hold as the font scales).
 
 ## Background Atmosphere
 
@@ -215,7 +221,7 @@ body {
 .prose-on-pattern {
   background: var(--bg);   /* opaque — masks the body pattern behind this block */
   border-radius: 12px;
-  padding: 24px 28px;
+  padding: 24px 32px;
 }
 ```
 
@@ -764,7 +770,7 @@ Use real `<table>` elements for tabular data. Wrap in a scrollable container for
   font-size: 11px;
   background: var(--accent-dim);
   color: var(--accent);
-  padding: 1px 5px;
+  padding: 1px 6px;
   border-radius: 3px;
 }
 
@@ -1096,7 +1102,7 @@ Small inline labels for categorizing elements:
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 500;
-  padding: 2px 7px;
+  padding: 2px 8px;
   border-radius: 4px;
   background: var(--node-a-dim);
   color: var(--node-a);
@@ -1134,7 +1140,7 @@ For tool listings, feature lists, table columns:
   font-size: 11px;
   background: var(--accent-dim);
   color: var(--accent);
-  padding: 1px 5px;
+  padding: 1px 6px;
   border-radius: 3px;
 }
 ```
@@ -1342,7 +1348,7 @@ button {
   font: inherit;              /* buttons don't inherit font by default */
   cursor: pointer;
   border-radius: 6px;
-  padding: 7px 14px;
+  padding: 8px 14px;
   border: 1px solid transparent;
   transition: background 0.15s ease, border-color 0.15s ease,
               filter 0.15s ease, transform 0.1s ease;
@@ -1398,7 +1404,7 @@ input[type="text"], input[type="search"], select, textarea {
   background: var(--surface);
   border: 1px solid var(--border-bright);
   border-radius: 6px;
-  padding: 7px 10px;
+  padding: 8px 10px;
 }
 input:disabled, select:disabled, textarea:disabled { opacity: 0.55; cursor: not-allowed; }
 
@@ -1509,19 +1515,467 @@ Constraint violations (a flag enabled without its prerequisite, a regex that doe
 .field.is-invalid input { border-color: var(--node-c); }
 
 .field-warning {
-  margin-top: 5px;
+  margin-top: 4px;
   font-size: 12px;
   color: var(--node-c);              /* ink tone — clears 4.5:1 like any small text */
   background: var(--node-c-dim);
   border: 1px solid color-mix(in srgb, var(--node-c) 30%, transparent);
   border-radius: 5px;
-  padding: 5px 9px;
+  padding: 6px 10px;
 }
 ```
 
 Full tinted border and wash — the message reads as attached to its field. A warning that only changes a border color fails the squint test; the text is what says *why*.
 
 Wire it for assistive tech too: point the input at its message with `aria-describedby`, and give the message container `role="status"` so a warning that appears mid-edit is announced without stealing focus.
+
+## Question Blocks (Asking the User)
+
+The copyable implementation of the "Asking the user" contract in [`tool-patterns.md`](tool-patterns.md) — the surface any page uses to ask the user to approve, pick, or sign off. Improvised markup here is the most common source of layout jank on generated pages: unlabelled groups, labels that drift off their controls as the font scales, hit areas too small to click, and a recommendation marker invented per page.
+
+Every question is a `<fieldset>` with a `<legend>`. The group semantics are not optional — a screen reader announces the question with each option only when the options sit inside the fieldset that legend names.
+
+```css
+.qblock {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 16px 20px;
+  min-width: 0;
+}
+.qblock + .qblock { margin-top: 24px; }   /* question → question */
+
+.qblock > legend {
+  padding: 0 8px;
+  margin-left: -8px;                       /* pull the legend flush with the padding box */
+  font-weight: 600;
+  color: var(--text-bright);
+  line-height: 1.4;
+}
+
+.qblock__help {                            /* the one-line why, under the legend */
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.qblock__options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;                                /* option → option */
+  margin-top: 12px;                        /* question text → its controls */
+}
+```
+
+### Option rows
+
+Style the control rather than hiding it. `accent-color` is the one-line fallback and covers browsers that ignore the custom appearance:
+
+```css
+.opt {
+  display: grid;
+  grid-template-columns: 18px 1fr;         /* control column fixed; text column shrinks */
+  gap: 12px;
+  align-items: start;
+  min-height: 24px;                        /* hit-area floor */
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  cursor: pointer;
+  min-width: 0;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.opt:hover { border-color: var(--border-bright); }
+
+.opt input {
+  accent-color: var(--accent);             /* minimal fallback — keep it even when restyling */
+  font: inherit;                           /* controls don't inherit font — without this, the
+                                              em in the margin-top below tracks the browser's
+                                              control font, not the label's */
+  appearance: none;
+  -webkit-appearance: none;
+  grid-area: 1 / 1;                        /* explicit, so the tick can share the cell */
+  width: 18px; height: 18px;
+  margin: 0;
+  /* Align the control to the first text line's optical centre, not the box top.
+     Set from line-height, so it holds as the font scales. */
+  margin-top: calc((1.5em - 18px) / 2);
+  border: 1.5px solid var(--border-bright);
+  background: var(--surface);
+  cursor: pointer;
+}
+.opt input[type="radio"] { border-radius: 50%; }
+.opt input[type="checkbox"] { border-radius: 3px; }
+
+.opt input:checked { border-color: var(--accent-fill); background: var(--accent-fill); }
+.opt input[type="radio"]:checked {
+  /* Inner disc as an inset ring. Never a pseudo-element: ::before/::after on an
+     <input> is a replaced-element hack that Firefox declines to render. */
+  box-shadow: inset 0 0 0 3px var(--surface);
+}
+
+/* Checkbox tick: an SVG placed in the same grid cell as the input, above it.
+   It takes --accent-on-fill, so the tick pairs with the fill in both themes. */
+.opt__tick {
+  grid-area: 1 / 1;
+  align-self: start;
+  margin-top: calc((1.5em - 18px) / 2);
+  width: 18px; height: 18px;
+  color: var(--accent-on-fill);
+  pointer-events: none;
+  opacity: 0;
+}
+.opt:has(input:checked) .opt__tick { opacity: 1; }
+
+.opt:has(input:checked) {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: var(--accent-dim);
+}
+.opt:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.opt__label { grid-area: 1 / 2; line-height: 1.5; color: var(--text); min-width: 0; }
+.opt__help  { display: block; margin-top: 4px; font-size: 12px; color: var(--text-dim); }
+
+@media (pointer: coarse) { .opt { min-height: 44px; } }
+```
+
+The whole row is the `<label>`, so the text is part of the hit area:
+
+```html
+<fieldset class="qblock" data-question="cacheLayer">
+  <legend>Which cache layer?</legend>
+  <p class="qblock__help">Drives the retry budget in step 4.</p>
+  <div class="qblock__options">
+    <label class="opt">
+      <input type="radio" name="cacheLayer" value="redis" checked>
+      <span class="opt__label">Redis
+        <span class="rec-pill">Recommended</span>
+        <span class="rec-reason">Already in the stack.</span>
+      </span>
+    </label>
+    <label class="opt">
+      <input type="radio" name="cacheLayer" value="memcached">
+      <span class="opt__label">Memcached
+        <span class="opt__help">Lower memory ceiling, no persistence.</span>
+      </span>
+    </label>
+  </div>
+</fieldset>
+```
+
+Checkbox rows carry the tick SVG as a third child of the label:
+
+```html
+<label class="opt">
+  <input type="checkbox" name="scope" value="tests">
+  <svg class="opt__tick" viewBox="0 0 18 18" fill="none" stroke="currentColor"
+       stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M4 9.5 L7.5 13 L14 5.5"/>
+  </svg>
+  <span class="opt__label">Update the test suite</span>
+</label>
+```
+
+### Choice chips
+
+For compact sets — a tag, a size, a one-word verdict. Same radios, laid out inline:
+
+```css
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+.chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 4px 12px;
+  border: 1px solid var(--border-bright);
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+.chip input {                              /* control fills the chip; the chip is the affordance */
+  position: absolute; inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.chip:has(input:checked) {
+  background: var(--accent-fill);
+  color: var(--accent-on-fill);
+  border-color: var(--accent-fill);
+}
+.chip:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (pointer: coarse) { .chip { min-height: 44px; } }
+```
+
+A chip set still lives inside a `.qblock` fieldset with its legend — compact layout does not remove the group semantics.
+
+### The Recommended marker
+
+One option per question carries it, with the one-line reason beside it. The pill is the `.status--info` treatment — `--accent` ink on `--accent-dim` — and the reason sits in `--text-dim` because it is the skippable half:
+
+```css
+.rec-pill {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  white-space: nowrap;
+  margin-left: 8px;
+}
+
+.rec-reason {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+```
+
+A bare "Recommended" invites a rubber stamp. The reason is the part that can be argued with, so it is never optional.
+
+### The escape option
+
+Every choice set ends with "None of these", and selecting it reveals a text input. Pure CSS, no JS — the input is a sibling the checked state reveals:
+
+```css
+.opt--escape + .escape-field {
+  display: none;                           /* the options column's 8px gap supplies the spacing */
+  margin-left: 42px;                       /* row padding 12 + control column 18 + gap 12 —
+                                              lines the field up with the option's text */
+}
+.opt--escape:has(input:checked) + .escape-field { display: block; }
+
+.escape-field input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  padding: 8px 12px;
+}
+```
+
+```html
+<label class="opt opt--escape">
+  <input type="radio" name="cacheLayer" value="__other">
+  <span class="opt__label">None of these — the question is wrong</span>
+</label>
+<div class="escape-field">
+  <input type="text" name="cacheLayer-other" aria-label="What would you do instead?"
+         placeholder="What would you do instead?">
+</div>
+```
+
+`:has()` is the whole mechanism, and it ships everywhere current. Where a page must survive an older engine, add the same rule keyed off a class the JS toggles on `input` — one line, and the CSS path keeps working underneath it.
+
+### Notes fields
+
+Per-item and page-level, same treatment at two sizes. Both stay optional, and neither blocks the export:
+
+```css
+.note {
+  width: 100%;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  resize: vertical;
+  line-height: 1.55;
+  min-height: 64px;
+}
+.note:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.note::placeholder { color: var(--text-dim); }
+
+.note--page { min-height: 96px; margin-top: 8px; }
+
+.note-label {                              /* the label above either scope */
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.qblock .note { margin-top: 16px; }        /* question body → its note */
+
+@media (pointer: coarse) { .note { font-size: max(16px, 1em); } }
+```
+
+### Form rhythm
+
+Every gap in a question surface comes from this table. Guessing a near-miss value here is what makes generated forms look improvised:
+
+| Gap | Value |
+|---|---|
+| Label → its control | `12px` |
+| Control → its help/error text | `4px` |
+| Option → option | `8px` |
+| Option → its revealed escape field | `8px` |
+| Question body → its note field | `16px` |
+| Question → question | `24px` |
+| Question group → export bar | `32px` |
+| Page section → page-level notes | `48px` |
+
+Option row padding is `8px 12px`; question block padding is `16px 20px` — the `20px` is a component half-step, and it is the only one a form needs.
+
+### Provenance states
+
+Three states, and they must survive grayscale: pair every tint with a word. Color alone cannot carry confirmed-versus-untouched, because that distinction is the export's whole payload.
+
+```css
+.prov {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+/* Untouched: the agent's pre-fill, never confirmed. Dashed edge = provisional. */
+.prov--untouched {
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px dashed var(--border-bright);
+}
+.prov--untouched::before { content: '○'; }
+
+/* Confirmed: user clicked the agent's own answer. */
+.prov--confirmed {
+  color: var(--green, #15803d);
+  background: var(--green-dim, rgba(21, 128, 61, 0.1));
+}
+.prov--confirmed::before { content: '✓'; }
+
+/* Overridden: user chose something else. */
+.prov--overridden {
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+.prov--overridden::before { content: '↷'; }
+
+/* The block itself carries the state too, so a scan finds the untouched ones. */
+.qblock[data-prov="untouched"] { border-style: dashed; }
+.qblock[data-prov="overridden"] { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+```
+
+```html
+<span class="prov prov--untouched">Not confirmed</span>
+<span class="prov prov--confirmed">Confirmed</span>
+<span class="prov prov--overridden">Changed by you</span>
+```
+
+The word inside the pill is what survives grayscale and a screen reader; the glyph and tint only speed the scan up.
+
+**Wiring, and this is the one that bites:** clicking an already-checked radio fires **no `change` event**. If provenance capture listens on `change` alone, confirming the recommendation records nothing, and "confirmed" and "untouched" become indistinguishable — which destroys the honest export the whole contract exists for. Listen on `click` (or `input` on the container) instead:
+
+```js
+// RIGHT — click fires even when the checked value does not change.
+form.addEventListener('click', (e) => {
+  const el = e.target.closest('input, textarea, select');
+  if (!el) return;
+  markTouched(el.name);       // flips source: "agent" → "user"
+});
+form.addEventListener('input', markTouchedFromEvent);   // covers typing and keyboard toggles
+
+// WRONG — re-clicking the pre-selected recommendation is silent here.
+form.addEventListener('change', markTouchedFromEvent);
+```
+
+Keyboard confirmation has the same hole in reverse: arrowing back onto the selected radio fires no event either, so treat a `keyup` of Space on a checked control as a touch.
+
+### Export bar
+
+The page's one primary button, its change counter, and the copy feedback. It sits at the end of the question surface, `32px` below the last block:
+
+```css
+.export-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 32px;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-elevated, var(--surface));
+}
+
+.export-bar .btn-primary {
+  min-width: 152px;                        /* widest label ("Copy updates" / "Copied ✓") — fixes reflow */
+  text-align: center;
+}
+
+.export-count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.export-count[data-dirty="true"] { color: var(--accent); }
+```
+
+```html
+<div class="export-bar">
+  <button type="button" class="btn-primary" id="export" aria-live="polite">Copy updates</button>
+  <span class="export-count" id="count" data-dirty="false">No changes yet</span>
+</div>
+```
+
+```js
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);       // needs a secure context; file:// counts
+    return true;
+  } catch {
+    const ta = document.createElement('textarea');   // fallback for the cases it does not
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:-1000px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  }
+}
+
+const btn = document.getElementById('export');
+const LABEL = btn.textContent;                       // captured once — a double click must not stick
+btn.addEventListener('click', async () => {
+  const ok = await copyText(buildMarkdown(state));   // serialize state, never scrape the DOM
+  btn.textContent = ok ? 'Copied ✓' : 'Copy failed — select and copy';
+  setTimeout(() => { btn.textContent = LABEL; }, 1500);
+  if (ok) state.exported = true;                     // clears the guard below
+});
+
+// Unexported edits live only in this tab. Warn while any exist, and not after export.
+window.addEventListener('beforeunload', (e) => {
+  if (state.dirty && !state.exported) e.preventDefault();
+});
+```
+
+Any edit after an export sets `state.exported = false` again — the guard tracks unexported changes, not whether an export ever happened.
 
 ## Prose Page Elements
 
@@ -1589,7 +2043,7 @@ Key insights pulled out for emphasis. Use sparingly — one or two per article m
 /* Indented with oversized quote mark */
 .pullquote {
   margin: 48px 0;
-  padding-left: 56px;
+  padding-left: 48px;
   position: relative;
 }
 .pullquote::before {
@@ -1612,8 +2066,8 @@ Key insights pulled out for emphasis. Use sparingly — one or two per article m
 
 /* Centered with quotation mark */
 .pullquote--centered {
-  margin: 56px 0;
-  padding: 32px 40px;
+  margin: 48px 0;
+  padding: 32px 48px;
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   text-align: center;
@@ -1661,7 +2115,7 @@ hr {
 /* Centered minimal — essays, personal posts */
 .hero--centered {
   text-align: center;
-  padding: 80px 24px 64px;
+  padding: 96px 24px 64px;
   max-width: 800px;
   margin: 0 auto;
 }
@@ -1693,7 +2147,7 @@ hr {
 
 /* Left-aligned editorial — features, documentation */
 .hero--editorial {
-  padding: 100px 40px 60px;
+  padding: 96px 48px 64px;
   max-width: 1000px;
   margin: 0 auto;
 }

@@ -40,6 +40,7 @@ Sidebar collapses to a toggleable drawer or top bar under ~800px; the reader is 
 - **Markdown narratives**: convert to HTML at generation time (you, not a client-side library) so the file needs no markdown runtime.
 - **Scale**: render the nav list fully up to ~500 docs; beyond that, paginate or render only matching items. Warn the user when the embedded corpus pushes the file past ~5 MB.
 - **Keyboard**: ↑/↓ or j/k moves between docs, `/` focuses search. Cheap to add, transforms perusal.
+- **Every filter is a real control.** Facet pills, the tags inside the reader that cross-filter, and the clear-filters affordance are `<button>` elements — not styled `<div>`s or `<span>`s — so they're tab-reachable and toggle on Enter and Space with no key handling of your own. Each carries the kit's `:focus-visible` ring, and an active pill announces itself with `aria-pressed="true"` rather than a color change alone. Cross-filtering is the browser's highest-leverage interaction; it can't be mouse-only.
 
 ## Privacy pass
 

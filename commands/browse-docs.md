@@ -3,7 +3,7 @@ description: Generate a self-contained HTML document browser — peruse a collec
 ---
 Load the html-craft skill, then build a document browser as a single self-contained HTML page for the corpus the user points at.
 
-Follow the html-craft skill workflow. Read `../references/browser-patterns.md` before making any structural choice, plus `../references/css-patterns.md` and the skill's Style and Anti-Patterns sections. Follow the impeccable skill's frontend craft (accessibility, responsiveness, deliberate component quality) within this skill's aesthetic constraints.
+Follow the html-craft skill workflow. Read `../references/browser-patterns.md` before making any structural choice, plus `../references/css-patterns.md`, the skill's Style step, and `../references/anti-patterns.md`. Follow the impeccable skill's frontend craft (accessibility, responsiveness, deliberate component quality) within this skill's aesthetic constraints.
 
 **Corpus ingestion** — `$1` is a folder, glob, or description of the documents; ask only if no corpus is identifiable from arguments or conversation:
 

@@ -84,7 +84,7 @@
     background-size: 24px 24px;
     color: var(--text);
     font-family: var(--font-body);
-    padding: 40px;
+    padding: 48px;
     min-height: 100vh;
   }
 
@@ -142,7 +142,7 @@
     font-size: 12px;
     background: var(--primary-dim);
     color: var(--primary);
-    padding: 1px 5px;
+    padding: 1px 6px;
     border-radius: 3px;
   }
 
@@ -201,6 +201,13 @@
     padding: 0 10px;
     font-family: var(--font-body);
     font-weight: 600;
+  }
+
+  /* 28px is a mouse-sized target; touch-primary devices get the 44px floor.
+     The label button keeps its text-sized width and grows only in height. */
+  @media (pointer: coarse) {
+    .zoom-controls button { width: 44px; height: 44px; }
+    .zoom-controls button[data-action="export-webp"] { width: auto; }
   }
 
   .mermaid-wrap { cursor: grab; }
@@ -305,7 +312,7 @@
     font-size: 11px;
     background: var(--primary-dim);
     color: var(--primary);
-    padding: 1px 5px;
+    padding: 1px 6px;
     border-radius: 3px;
   }
 
@@ -409,6 +416,7 @@
   const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 
   let activeDrag = null;
+  const renderers = [];
 
   addEventListener('mousemove', (e) => activeDrag?.onMove(e));
   addEventListener('mouseup', () => {
@@ -416,40 +424,47 @@
     activeDrag = null;
   });
 
-  const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const darkQuery = matchMedia('(prefers-color-scheme: dark)');
+  let isDark = darkQuery.matches;
 
   mermaid.registerLayoutLoaders(elkLayouts);
-  mermaid.initialize({
-    startOnLoad: false,
-    theme: 'base',
-    look: 'classic',
-    layout: 'elk',
-    flowchart: {
-      htmlLabels: false,
-      nodeSpacing: 72,
-      rankSpacing: 92,
-      padding: 32
-    },
-    themeVariables: {
-      fontFamily: "'Bricolage Grotesque', system-ui, sans-serif",
-      fontSize: '16px',
-      primaryColor: isDark ? '#115e59' : '#ccfbf1',
-      primaryBorderColor: isDark ? '#2dd4bf' : '#0d9488',
-      primaryTextColor: isDark ? '#ccfbf1' : '#134e4a',
-      secondaryColor: isDark ? '#0c4a6e' : '#e0f2fe',
-      secondaryBorderColor: isDark ? '#38bdf8' : '#0369a1',
-      secondaryTextColor: isDark ? '#ccfbf1' : '#134e4a',
-      tertiaryColor: isDark ? '#2e2618' : '#fffbeb',
-      tertiaryBorderColor: isDark ? '#fbbf24' : '#d97706',
-      tertiaryTextColor: isDark ? '#ccfbf1' : '#134e4a',
-      // Edges carry meaning, so they need the 3:1 non-text floor against the
-      // container surface — not the "barely visible" treatment given to borders.
-      lineColor: isDark ? '#5eead4' : '#4a716c',
-      noteBkgColor: isDark ? '#115e59' : '#fefce8',
-      noteTextColor: isDark ? '#ccfbf1' : '#134e4a',
-      noteBorderColor: isDark ? '#fbbf24' : '#d97706',
-    }
-  });
+
+  // Theme values are baked into the rendered SVG, so this runs again on a flip.
+  function initMermaid() {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'base',
+      look: 'classic',
+      layout: 'elk',
+      flowchart: {
+        htmlLabels: false,
+        nodeSpacing: 72,
+        rankSpacing: 92,
+        padding: 32
+      },
+      themeVariables: {
+        fontFamily: "'Bricolage Grotesque', system-ui, sans-serif",
+        fontSize: '16px',
+        primaryColor: isDark ? '#115e59' : '#ccfbf1',
+        primaryBorderColor: isDark ? '#2dd4bf' : '#0d9488',
+        primaryTextColor: isDark ? '#ccfbf1' : '#134e4a',
+        secondaryColor: isDark ? '#0c4a6e' : '#e0f2fe',
+        secondaryBorderColor: isDark ? '#38bdf8' : '#0369a1',
+        secondaryTextColor: isDark ? '#ccfbf1' : '#134e4a',
+        tertiaryColor: isDark ? '#2e2618' : '#fffbeb',
+        tertiaryBorderColor: isDark ? '#fbbf24' : '#d97706',
+        tertiaryTextColor: isDark ? '#ccfbf1' : '#134e4a',
+        // Edges carry meaning, so they need the 3:1 non-text floor against the
+        // container surface — not the "barely visible" treatment given to borders.
+        lineColor: isDark ? '#5eead4' : '#4a716c',
+        noteBkgColor: isDark ? '#115e59' : '#fefce8',
+        noteTextColor: isDark ? '#ccfbf1' : '#134e4a',
+        noteBorderColor: isDark ? '#fbbf24' : '#d97706',
+      }
+    });
+  }
+
+  initMermaid();
 
   function initDiagram(shell) {
     const wrap = shell.querySelector('.mermaid-wrap');
@@ -682,7 +697,7 @@
       <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Fragment+Mono:wght@400&display=swap" rel="stylesheet">
       <title>Diagram</title><style>
       body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
-      background:${prepared.bg};padding:40px;box-sizing:border-box}
+      background:${prepared.bg};padding:48px;box-sizing:border-box}
       svg{max-width:100%;max-height:90vh;height:auto;overflow:visible}
       </style></head><body>${prepared.clone.outerHTML}</body></html>`;
 
@@ -854,10 +869,20 @@
       }
     }).observe(wrap);
 
+    renderers.push(render);
     render();
   }
 
   document.querySelectorAll('.diagram-shell').forEach(initDiagram);
+
+  /* The page's own CSS follows an OS theme flip, but an already-rendered SVG
+     keeps the theme values it was built with. Re-initialize with the new
+     values and re-render every diagram. One listener, registered once. */
+  darkQuery.addEventListener('change', (event) => {
+    isDark = event.matches;
+    initMermaid();
+    renderers.forEach((render) => render());
+  });
 </script>
 
 </body>

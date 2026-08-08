@@ -314,9 +314,10 @@ flowchart TD
 
 ### Diagram Type Examples
 
+**⚠️ Every block below is diagram *source* only — not page markup.** Each one belongs inside a `<script type="text/plain" class="diagram-source">` within a `diagram-shell` (see "Full Pattern" below). Never paste one into a bare `<pre class="mermaid">`.
+
 **Flowchart with decisions:**
-```html
-<pre class="mermaid">
+```mermaid
 graph TD
   A[Request] --> B{Authenticated?}
   B -->|Yes| C[Load Dashboard]
@@ -326,12 +327,10 @@ graph TD
   C --> F{Role?}
   F -->|Admin| G[Admin Panel]
   F -->|User| H[User Dashboard]
-</pre>
 ```
 
 **Sequence diagram:**
-```html
-<pre class="mermaid">
+```mermaid
 sequenceDiagram
   participant C as Client
   participant G as Gateway
@@ -344,12 +343,10 @@ sequenceDiagram
   D-->>S: Results
   S-->>G: Response
   G-->>C: 200 OK
-</pre>
 ```
 
 **ER diagram:**
-```html
-<pre class="mermaid">
+```mermaid
 erDiagram
   USERS ||--o{ ORDERS : places
   ORDERS ||--|{ LINE_ITEMS : contains
@@ -358,12 +355,10 @@ erDiagram
   ORDERS { int id PK }
   LINE_ITEMS { int quantity }
   PRODUCTS { string name }
-</pre>
 ```
 
 **State diagram:**
-```html
-<pre class="mermaid">
+```mermaid
 stateDiagram-v2
   [*] --> Draft
   Draft --> Review : submit
@@ -372,12 +367,10 @@ stateDiagram-v2
   Approved --> Published : publish
   Published --> Archived : archive
   Archived --> [*]
-</pre>
 ```
 
 **Mind map:**
-```html
-<pre class="mermaid">
+```mermaid
 mindmap
   root((Project))
     Frontend
@@ -392,12 +385,10 @@ mindmap
       AWS
       Docker
       Terraform
-</pre>
 ```
 
 **Class diagram:**
-```html
-<pre class="mermaid">
+```mermaid
 classDiagram
   class User {
     +string email
@@ -416,26 +407,23 @@ classDiagram
   }
   User "1" --> "*" Order : places
   Order "*" --> "*" Product : contains
-</pre>
 ```
 
 **C4 architecture (flowchart-as-C4):**
-```html
-<pre class="mermaid">
+```mermaid
 graph TD
-  user("👤 User<br/><small>Browser client</small>")
+  user("User<br/><small>Browser client</small>")
   subgraph boundary["Web Platform"]
     app["Web App<br/><small>Node.js</small>"]
     db[("Database<br/><small>PostgreSQL</small>")]
   end
-  email["📧 Email Service"]:::ext
-  payment["💳 Payment Gateway"]:::ext
+  email["Email Service"]:::ext
+  payment["Payment Gateway"]:::ext
   user -->|"HTTPS"| app
   app -->|"SQL"| db
   app -->|"SMTP"| email
   app -->|"API"| payment
   classDef ext fill:none,stroke-dasharray:5 5
-</pre>
 ```
 
 Do NOT use native `C4Context` / `C4Container` syntax — it hardcodes sharp corners, its own font, and inline colors that ignore `themeVariables`. Use `graph TD` + `subgraph` for C4 boundaries instead; it inherits all theme settings automatically.
@@ -538,13 +526,13 @@ The lever that actually helps a large diagram is **container height**. `setAdapt
 
 ### Zoom Controls
 
-Add zoom controls to every `.mermaid-wrap` container for complex diagrams. This transform-based engine is the **single** pan/zoom implementation for the skill: scrollable pages copy it wholesale from `templates/mermaid-flowchart.html`. Slide decks don't fork it — on slides, diagrams are click-to-expand only (see `slide-patterns.md`).
+Add zoom controls to every `.mermaid-wrap` container for complex diagrams. This transform-based engine is the **single** pan/zoom implementation for the skill: scrollable pages copy it wholesale from `../templates/mermaid-flowchart.html`. Slide decks don't fork it — on slides, diagrams are click-to-expand only (see `slide-patterns.md`).
 
 **Small diagrams in slides.** If a diagram has fewer than ~7 nodes with no branching, it will render tiny in a full-viewport slide container. For simple linear flows (A → B → C → D), use CSS pipeline cards instead of Mermaid — see `slide-patterns.md` "CSS Pipeline Slide." Reserve Mermaid for complex graphs where automatic edge routing is actually needed.
 
 ### Full Pattern
 
-The complete `diagram-shell` implementation — CSS, HTML, and the zoom/pan/fit/expand/export JavaScript — lives in `templates/mermaid-flowchart.html`. **Copy it wholesale**; it is the single source of truth for this engine. Do not retype it from memory or rebuild it from this summary.
+The complete `diagram-shell` implementation — CSS, HTML, and the zoom/pan/fit/expand/export JavaScript — lives in `../templates/mermaid-flowchart.html`. **Copy it wholesale**; it is the single source of truth for this engine. Do not retype it from memory or rebuild it from this summary.
 
 Rules the implementation embodies (verify these survive your adaptation):
 
@@ -557,7 +545,7 @@ Rules the implementation embodies (verify these survive your adaptation):
 
 ## Export Controls and Export Safety
 
-Every `.mermaid-wrap` container gets zoom controls (+/−/reset/expand) **plus a `WebP` export button**. Export controls must have width driven by their label (`width: auto; min-width: 62px; padding: 0 10px;`) so button text never clips. Include JavaScript so the ⛶ button opens a padded full-size SVG clone in a new tab, and the `WebP` button downloads a padded canvas-rendered `.webp` of the diagram.
+Every `.mermaid-wrap` container gets the full zoom cluster (`+`, `−`, fit, 1:1, ⛶ expand) **plus a `WebP` export button** — there is no separate "reset"; fit *is* the reset. Export controls must have width driven by their label (`width: auto; min-width: 62px; padding: 0 10px;`) so button text never clips. Include JavaScript so the ⛶ button opens a padded full-size SVG clone in a new tab, and the `WebP` button downloads a padded canvas-rendered `.webp` of the diagram.
 
 Prefer `flowchart: { htmlLabels: false }` for flowcharts that may be expanded or exported — HTML labels often clip when serialized to SVG, opened in a new tab, or drawn to canvas. Keep labels short and manually line-break them with `<br/>`.
 
